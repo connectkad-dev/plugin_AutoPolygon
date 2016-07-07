@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/plugins/AutoPolygon" >
         <file>icon.png</file>
+        <file>icons/rectangle.png</file>
     </qresource>
 </RCC>
