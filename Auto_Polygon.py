@@ -28,6 +28,10 @@ import resources_rc
 from Auto_Polygon_dialog import AutoPolygonDialog
 import os.path
 
+#Import qgis api
+from qgis.core import *
+from qgis.gui import *
+
 
 class AutoPolygon:
     """QGIS Plugin Implementation."""
@@ -164,7 +168,7 @@ class AutoPolygon:
         self.add_action(
             icon_path,
             text=self.tr(u'Automatic Polygon'),
-            callback=self.run,
+            callback=self.rectdigit,
             parent=self.iface.mainWindow())
 
 
@@ -188,3 +192,17 @@ class AutoPolygon:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
             pass
+            
+    def rectdigit(self):
+        #self.canvas.setMapTool(self.rectdigitcentertool)
+        #self.rectdigitcenter.setChecked(True)       
+        
+        # A la fin de la saisie, on appel la fonction createFeature
+        #QObject.connect(self.rectdigitcentertool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)
+        
+        self.iface.messageBar().pushMessage(
+                    self.tr(u'&Rennes Metropole Test'),
+                    self.tr(u'Rennes Metropole Test'),
+                    level=QgsMessageBar.CRITICAL,
+                    duration=3
+                )
