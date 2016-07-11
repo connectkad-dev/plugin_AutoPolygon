@@ -20,18 +20,24 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication
-from PyQt4.QtGui import QAction, QIcon
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
 # Initialize Qt resources from file resources.py
 import resources_rc
+
 # Import the code for the dialog
 from Auto_Polygon_dialog import AutoPolygonDialog
 import os.path
 
-#Import qgis api
+# Import qgis api
 from qgis.core import *
 from qgis.gui import *
 
+import sys
+sys.path.append('/include')
+
+# Import des outils de digitalisation de rectangle
+from include.rect_digit_tools import RectDigitTool
 
 class AutoPolygon:
     """QGIS Plugin Implementation."""
@@ -46,6 +52,10 @@ class AutoPolygon:
         """
         # Save reference to the QGIS interface
         self.iface = iface
+        
+        #Récupération du graphique
+        self.canvas = self.iface.mapCanvas()
+        
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
         # initialize locale
@@ -170,7 +180,18 @@ class AutoPolygon:
             text=self.tr(u'Automatic Polygon'),
             callback=self.rectdigit,
             parent=self.iface.mainWindow())
-
+            
+        # Récupération de l'outil pour digitaliser un rectangle
+        self.rectdigittool = RectDigitTool( self.canvas )
+        result = self.rectdigittool.SetPositionPoint("Tot")
+        
+        if result is not None :
+            self.iface.messageBar().pushMessage(
+                        self.tr(u'Warning'),
+                        self.tr(result),
+                        level=QgsMessageBar.WARNING,
+                        duration=3
+                    )
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -194,15 +215,54 @@ class AutoPolygon:
             pass
             
     def rectdigit(self):
-        #self.canvas.setMapTool(self.rectdigitcentertool)
-        #self.rectdigitcenter.setChecked(True)       
+        self.canvas.setMapTool(self.rectdigittool)
+        #self.rectdigit.setChecked(True)       
         
         # A la fin de la saisie, on appel la fonction createFeature
-        #QObject.connect(self.rectdigitcentertool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)
+        QObject.connect(self.rectdigittool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)
         
         self.iface.messageBar().pushMessage(
                     self.tr(u'&Rennes Metropole Test'),
                     self.tr(u'Rennes Metropole Test'),
-                    level=QgsMessageBar.CRITICAL,
+                    level=QgsMessageBar.INFO,
                     duration=3
                 )
+
+    #Création de l'objet
+    def createFeature(self, geom):
+        settings = QSettings()
+        mc = self.canvas
+        
+        #Récupération de la couche
+        layer = mc.currentLayer()
+        if layer <> None:
+            renderer = mc.mapRenderer()
+            
+            #Récupération du srid de la couche
+            layerCRSSrsid = layer.crs().srsid()
+            projectCRSSrsid = renderer.destinationCrs().srsid()
+            
+            provider = layer.dataProvider()   
+            f = QgsFeature()
+            
+            
+            #On the Fly reprojection.
+            if layerCRSSrsid != projectCRSSrsid:
+                geom.transform(QgsCoordinateTransform(projectCRSSrsid, layerCRSSrsid))
+                                        
+            f.setGeometry(geom)
+            
+            # add attribute fields to feature
+            fields = layer.pendingFields()
+
+            # vector api change update
+
+            f.initAttributes(fields.count())
+            for i in range(fields.count()):
+                f.setAttribute(i,provider.defaultValue(i))
+
+            layer.beginEditCommand("Création d'objet")       
+            layer.addFeature(f)
+            layer.endEditCommand()
+        else:
+            QObject.disconnect(self.rectdigittool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)
