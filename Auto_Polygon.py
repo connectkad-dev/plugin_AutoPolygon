@@ -250,8 +250,12 @@ class AutoPolygon:
                 #On rend le bouton inclickable
                 self.rectdigit.setEnabled(False)
                 
-                #On se "connecte" à l'évenèment de début d'édition
-                QObject.connect(layer,SIGNAL("editingStarted()"),self.toggle)
+                if layer.geometryType() == 2:
+                    #On se "connecte" à l'évenèment de début d'édition
+                    QObject.connect(layer,SIGNAL("editingStarted()"),self.toggle)
+                else:
+                    #On se "déconnecte" à l'évenèment de début d'édition
+                    QObject.disconnect(layer,SIGNAL("editingStarted()"),self.toggle) 
                 
                 #On se "déconnecte" à l'évenèment de fin d'édition
                 QObject.disconnect(layer,SIGNAL("editingStopped()"),self.toggle)

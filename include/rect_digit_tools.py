@@ -25,14 +25,12 @@ class RectDigitTool(QgsMapTool):
         
         self.position_pnt = "Center"
         
-        #Initialisation de la largeur
-        self.width = 4
+        #Initialisation de la largeur par défaut
+        self.width = 2
         
-        #Initialisation de la longueur
-        self.heigth = 10
-        
-        
-        #self.mCtrl = None
+        #Initialisation de la longueur par défaut
+        self.heigth = 1
+                
         #our own fancy cursor
         self.cursor = QCursor(QPixmap(["16 16 3 1",
                                        "      c None",
@@ -55,6 +53,8 @@ class RectDigitTool(QgsMapTool):
                                        "      ++.++     ",
                                        "       +.+      "]))
                                        
+        self.rb = None
+                                       
     
     def SetPositionPoint(self,position = "Center"):
         
@@ -63,17 +63,15 @@ class RectDigitTool(QgsMapTool):
             return
         else:
             return u'La position : "' + position + '" est inconnu. La liste est des positions de point possibles sont : ' + str(list_position)
-           
-            
-                     
+                    
     def canvasPressEvent(self,event):
     
         #Récupération de la couche en cours
         layer = self.canvas.currentLayer()
-        #color = QColor(255,0,0)
+        color = QColor(255,0,0,125)
         self.rb = QgsRubberBand(self.canvas, True)
-        #self.rb.setColor(color)
-        #self.rb.setWidth(1)
+        self.rb.setColor(color)
+        self.rb.setWidth(1)
        
         # Récupération du point en cours selon les coordonnées
         point = self.toLayerCoordinates(layer,event.pos())  
@@ -83,14 +81,13 @@ class RectDigitTool(QgsMapTool):
         
         currpoint = self.toMapCoordinates(event.pos())
         
-        currx = currpoint.x()
-        curry = currpoint.y()
+        self.currx = currpoint.x()
+        self.curry = currpoint.y()
         
         #Calcul des Offset
-        xOffset = abs( currx - self.xc)
-        yOffset = abs( curry - self.yc)
-        
-        
+        xOffset = abs( self.currx - self.xc)
+        yOffset = abs( self.curry - self.yc)
+                
         #Mise à 0 de la géométrie
         self.rb.reset(True)
         
@@ -99,59 +96,102 @@ class RectDigitTool(QgsMapTool):
         #Si la position  du point est Bottom Left (bas gauche)
         if self.position_pnt == "Bottom Left":
             
-            pt1 = QgsPoint(xOffset, yOffset)
-            pt2 = QgsPoint(xOffset, yOffset+self.width)
-            pt3 = QgsPoint(xOffset+self.heigth, yOffset+self.width)
-            pt4 = QgsPoint(xOffset+self.heigth, yOffset)
+            self.pt1 = QgsPoint(xOffset, yOffset)
+            self.pt2 = QgsPoint(xOffset, yOffset+self.width)
+            self.pt3 = QgsPoint(xOffset+self.heigth, yOffset+self.width)
+            self.pt4 = QgsPoint(xOffset+self.heigth, yOffset)
             
         #Si la position  du point est Bottom Right (bas droit)
         elif self.position_pnt == "Bottom Right":
             
-            pt1 = QgsPoint(xOffset-self.heigth, yOffset)
-            pt2 = QgsPoint(xOffset, yOffset)
-            pt3 = QgsPoint(xOffset, yOffset+self.width)
-            pt4 = QgsPoint(xOffset-self.heigth, yOffset+self.width)
+            self.pt1 = QgsPoint(xOffset-self.heigth, yOffset)
+            self.pt2 = QgsPoint(xOffset, yOffset)
+            self.pt3 = QgsPoint(xOffset, yOffset+self.width)
+            self.pt4 = QgsPoint(xOffset-self.heigth, yOffset+self.width)
             
         #Si la position  du point est Top Left (haut gauche)
         elif self.position_pnt == "Top Left":
             
-            pt1 = QgsPoint(xOffset, yOffset-self.width)
-            pt2 = QgsPoint(xOffset, yOffset)
-            pt3 = QgsPoint(xOffset+self.heigth, yOffset)
-            pt4 = QgsPoint(xOffset+self.heigth, yOffset-self.width)
+            self.pt1 = QgsPoint(xOffset, yOffset-self.width)
+            self.pt2 = QgsPoint(xOffset, yOffset)
+            self.pt3 = QgsPoint(xOffset+self.heigth, yOffset)
+            self.pt4 = QgsPoint(xOffset+self.heigth, yOffset-self.width)
             
         #Si la position  du point est Top Right (haut droit)
         elif self.position_pnt == "Top Right":
             
-            pt1 = QgsPoint(xOffset-self.heigth, yOffset-self.width)
-            pt2 = QgsPoint(xOffset, yOffset-self.width)
-            pt3 = QgsPoint(xOffset, yOffset)
-            pt4 = QgsPoint(xOffset-self.heigth, yOffset)
+            self.pt1 = QgsPoint(xOffset-self.heigth, yOffset-self.width)
+            self.pt2 = QgsPoint(xOffset, yOffset-self.width)
+            self.pt3 = QgsPoint(xOffset, yOffset)
+            self.pt4 = QgsPoint(xOffset-self.heigth, yOffset)
             
         else:
             #Sinon crée les points selon le centroide du rectange
-            pt1 = QgsPoint(-xOffset-(self.heigth/2), -yOffset-(self.width/2))
-            pt2 = QgsPoint(-xOffset-(self.heigth/2), yOffset+(self.width/2))
-            pt3 = QgsPoint(xOffset+(self.heigth/2), yOffset+(self.width/2))
-            pt4 = QgsPoint(xOffset+(self.heigth/2), -yOffset-(self.width/2))
+            self.pt1 = QgsPoint(-xOffset-(self.heigth/2), -yOffset-(self.width/2))
+            self.pt2 = QgsPoint(-xOffset-(self.heigth/2), yOffset+(self.width/2))
+            self.pt3 = QgsPoint(xOffset+(self.heigth/2), yOffset+(self.width/2))
+            self.pt4 = QgsPoint(xOffset+(self.heigth/2), -yOffset-(self.width/2))
         
         #Création du polygon selon les points
-        points = [pt1, pt2, pt3, pt4]
+        points = [self.pt1, self.pt2, self.pt3, self.pt4]
         polygon = [QgsPoint(i[0]+self.xc,i[1]+self.yc) for i in points]
         
         #Création du polygone
-        self.rb.setToGeometry(QgsGeometry.fromPolygon([polygon]), None)
-         
-         #Si on a bien un polygon, on valide la création
-        if self.rb.numberOfVertices() > 2:
-            geom = self.rb.asGeometry()
-            self.emit(SIGNAL("rbFinished(PyQt_PyObject)"), geom)
-            
-        self.rb.reset(True)
-        self.rb=None
+        self.rb.setToGeometry(QgsGeometry.fromPolygon([polygon]), None)    
         
         #Affichage du polygone
         self.canvas.refresh()
+    
+    def canvasMoveEvent(self,event):
+
+        if not self.rb:return
+
+        #Recalcul du rectangle
+        currpoint = self.toMapCoordinates(event.pos())
+        
+        pt1 = self.pt1
+        pt2 = self.pt2
+        pt3 = self.pt3
+        pt4 = self.pt4
+        
+        if self.currx > currpoint.x():
+            pt1 = QgsPoint(pt1.x()*-1, pt1.y())
+            pt2 = QgsPoint(pt2.x()*-1, pt2.y())
+            
+        if self.curry > currpoint.y():
+            pt3 = QgsPoint(pt3.x(), pt3.y()*-1)
+            pt4 = QgsPoint(pt4.x(), pt4.y()*-1)
+        
+         #Création du polygon selon les points
+        points = [self.pt1, self.pt2, self.pt3, self.pt4]
+        polygon = [QgsPoint(i[0]+self.xc,i[1]+self.yc) for i in points]
+        
+        #Création du polygone
+        self.rb.setToGeometry(QgsGeometry.fromPolygon([polygon]), None)    
+        
+        
+        
+        
+        #self.rb.setToGeometry(geom, None)
+        
+    #Au relachement du clic
+    def canvasReleaseEvent(self,event):
+    
+        #On enlève le rectangle de digitalisation
+        if self.rb <> None:
+        
+            #Si on a bien un polygon, on valide la création
+            if self.rb.numberOfVertices() > 2:
+                geom = self.rb.asGeometry()
+                self.emit(SIGNAL("rbFinished(PyQt_PyObject)"), geom)
+                
+            self.rb.reset(True)
+            self.rb=None
+            
+            #Affichage du polygone
+            self.canvas.refresh()
+            
+        
         
     def showSettingsWarning(self):
         pass
