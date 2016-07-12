@@ -175,15 +175,15 @@ class AutoPolygon:
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
         icon_path = ':/plugins/AutoPolygon/icons/rectangle.png'
-        self.add_action(
+        self.rectdigit = self.add_action(
             icon_path,
             text=self.tr(u'Automatic Polygon'),
-            callback=self.rectdigit,
+            callback=self.rectcreate,
             parent=self.iface.mainWindow())
             
         # Récupération de l'outil pour digitaliser un rectangle
         self.rectdigittool = RectDigitTool( self.canvas )
-        result = self.rectdigittool.SetPositionPoint("Tot")
+        result = self.rectdigittool.SetPositionPoint("Bottom Left")
         
         if result is not None :
             self.iface.messageBar().pushMessage(
@@ -192,6 +192,15 @@ class AutoPolygon:
                         level=QgsMessageBar.WARNING,
                         duration=3
                     )
+                    
+        #On se "connecte" à l'événement changement de couche
+        QObject.connect(self.iface, SIGNAL("currentLayerChanged(QgsMapLayer*)"), self.toggle)
+        
+        # Par défaut, on met le bouton enabled à False
+        self.rectdigit.setEnabled(False)
+        
+        #Si une couche est déjà sélectionné, on demande à exécuter toggle  si l'utilisateur demande l'édition    
+        self.toggle()
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -200,7 +209,11 @@ class AutoPolygon:
                 self.tr(u'&Automatic Polygon'),
                 action)
             self.iface.removeToolBarIcon(action)
-
+        
+        #Déconnexion des événements
+        QObject.disconnect(self.rectdigittool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)
+        QObject.disconnect(self.iface, SIGNAL("currentLayerChanged(QgsMapLayer*)"), self.toggle)
+    
 
     def run(self):
         """Run method that performs all the real work"""
@@ -213,8 +226,37 @@ class AutoPolygon:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
             pass
+         
+    #Fonction au basculement/Changement d'une couche
+    def toggle(self):
+        mc = self.canvas
+        layer = mc.currentLayer()
+        #Decide whether the plugin button/menu is enabled or disabled
+        if layer <> None:
+                                   
+            #Si la couche est éditable et que c'est la géométrie est de type polygone
+            if (layer.isEditable() and layer.geometryType() == 2):
+                                                                   
+                #On rend le bouton clickable
+                self.rectdigit.setEnabled(True)
+
+                #On se "connecte" à l'évenèment de fin d'édition
+                QObject.connect(layer,SIGNAL("editingStopped()"),self.toggle)
+
+                #On se "déconnecte" à l'évenèment de début d'édition
+                QObject.disconnect(layer,SIGNAL("editingStarted()"),self.toggle) 
             
-    def rectdigit(self):
+            else:
+                #On rend le bouton inclickable
+                self.rectdigit.setEnabled(False)
+                
+                #On se "connecte" à l'évenèment de début d'édition
+                QObject.connect(layer,SIGNAL("editingStarted()"),self.toggle)
+                
+                #On se "déconnecte" à l'évenèment de fin d'édition
+                QObject.disconnect(layer,SIGNAL("editingStopped()"),self.toggle)
+                
+    def rectcreate(self):
         self.canvas.setMapTool(self.rectdigittool)
         #self.rectdigit.setChecked(True)       
         

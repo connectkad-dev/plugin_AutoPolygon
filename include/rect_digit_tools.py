@@ -3,6 +3,7 @@
 # List comprehensions in canvasMoveEvent functions are 
 # adapted from Benjamin Bohard`s part of rectovaldiams plugin.
 
+from PyQt4 import QtGui
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from qgis.core import *
@@ -89,14 +90,50 @@ class RectDigitTool(QgsMapTool):
         xOffset = abs( currx - self.xc)
         yOffset = abs( curry - self.yc)
         
+        
         #Mise à 0 de la géométrie
         self.rb.reset(True)
         
-        #Calcul des 4 points (rectangle de 10 par 4)
-        pt1 = QgsPoint(-xOffset-(self.heigth/2), -yOffset-(self.width/2))
-        pt2 = QgsPoint(-xOffset-(self.heigth/2), yOffset+(self.width/2))
-        pt3 = QgsPoint(xOffset+(self.heigth/2), yOffset+(self.width/2))
-        pt4 = QgsPoint(xOffset+(self.heigth/2), -yOffset-(self.width/2))
+        #Calcul des 4 points 
+        
+        #Si la position  du point est Bottom Left (bas gauche)
+        if self.position_pnt == "Bottom Left":
+            
+            pt1 = QgsPoint(xOffset, yOffset)
+            pt2 = QgsPoint(xOffset, yOffset+self.width)
+            pt3 = QgsPoint(xOffset+self.heigth, yOffset+self.width)
+            pt4 = QgsPoint(xOffset+self.heigth, yOffset)
+            
+        #Si la position  du point est Bottom Right (bas droit)
+        elif self.position_pnt == "Bottom Right":
+            
+            pt1 = QgsPoint(xOffset-self.heigth, yOffset)
+            pt2 = QgsPoint(xOffset, yOffset)
+            pt3 = QgsPoint(xOffset, yOffset+self.width)
+            pt4 = QgsPoint(xOffset-self.heigth, yOffset+self.width)
+            
+        #Si la position  du point est Top Left (haut gauche)
+        elif self.position_pnt == "Top Left":
+            
+            pt1 = QgsPoint(xOffset, yOffset-self.width)
+            pt2 = QgsPoint(xOffset, yOffset)
+            pt3 = QgsPoint(xOffset+self.heigth, yOffset)
+            pt4 = QgsPoint(xOffset+self.heigth, yOffset-self.width)
+            
+        #Si la position  du point est Top Right (haut droit)
+        elif self.position_pnt == "Top Right":
+            
+            pt1 = QgsPoint(xOffset-self.heigth, yOffset-self.width)
+            pt2 = QgsPoint(xOffset, yOffset-self.width)
+            pt3 = QgsPoint(xOffset, yOffset)
+            pt4 = QgsPoint(xOffset-self.heigth, yOffset)
+            
+        else:
+            #Sinon crée les points selon le centroide du rectange
+            pt1 = QgsPoint(-xOffset-(self.heigth/2), -yOffset-(self.width/2))
+            pt2 = QgsPoint(-xOffset-(self.heigth/2), yOffset+(self.width/2))
+            pt3 = QgsPoint(xOffset+(self.heigth/2), yOffset+(self.width/2))
+            pt4 = QgsPoint(xOffset+(self.heigth/2), -yOffset-(self.width/2))
         
         #Création du polygon selon les points
         points = [pt1, pt2, pt3, pt4]
