@@ -26,7 +26,7 @@ class RectDigitTool(QgsMapTool):
         self.position_pnt = "Center"
         
         #Initialisation de la largeur par défaut
-        self.width = 2
+        self.width = 1
         
         #Initialisation de la longueur par défaut
         self.heigth = 1
@@ -53,8 +53,7 @@ class RectDigitTool(QgsMapTool):
                                        "      ++.++     ",
                                        "       +.+      "]))
                                        
-        self.rb = None
-                                       
+        self.rb = None                                       
     
     def SetPositionPoint(self,position = "Center"):
         
@@ -100,7 +99,9 @@ class RectDigitTool(QgsMapTool):
             self.pt2 = QgsPoint(xOffset, yOffset+self.width)
             self.pt3 = QgsPoint(xOffset+self.heigth, yOffset+self.width)
             self.pt4 = QgsPoint(xOffset+self.heigth, yOffset)
-            
+                        
+            self.pt_oppose = self.pt4
+                                 
         #Si la position  du point est Bottom Right (bas droit)
         elif self.position_pnt == "Bottom Right":
             
@@ -108,6 +109,8 @@ class RectDigitTool(QgsMapTool):
             self.pt2 = QgsPoint(xOffset, yOffset)
             self.pt3 = QgsPoint(xOffset, yOffset+self.width)
             self.pt4 = QgsPoint(xOffset-self.heigth, yOffset+self.width)
+            
+            self.pt_oppose = self.pt1
             
         #Si la position  du point est Top Left (haut gauche)
         elif self.position_pnt == "Top Left":
@@ -117,6 +120,8 @@ class RectDigitTool(QgsMapTool):
             self.pt3 = QgsPoint(xOffset+self.heigth, yOffset)
             self.pt4 = QgsPoint(xOffset+self.heigth, yOffset-self.width)
             
+            self.pt_oppose = self.pt3
+            
         #Si la position  du point est Top Right (haut droit)
         elif self.position_pnt == "Top Right":
             
@@ -125,19 +130,39 @@ class RectDigitTool(QgsMapTool):
             self.pt3 = QgsPoint(xOffset, yOffset)
             self.pt4 = QgsPoint(xOffset-self.heigth, yOffset)
             
+            self.pt_oppose = self.pt4
+            
         else:
             #Sinon crée les points selon le centroide du rectange
+            
+            #On regarde si la taille est 1 et l'offset 0 (????)
+            if self.heigth == 1 and xOffset == 0:
+                xOffset = 0.5
+
+            #On regarde si la largueur est 1 et l'offset 0 (????)
+            if self.width == 1 and yOffset == 0:
+                yOffset = 0.5
+                     
             self.pt1 = QgsPoint(-xOffset-(self.heigth/2), -yOffset-(self.width/2))
             self.pt2 = QgsPoint(-xOffset-(self.heigth/2), yOffset+(self.width/2))
             self.pt3 = QgsPoint(xOffset+(self.heigth/2), yOffset+(self.width/2))
             self.pt4 = QgsPoint(xOffset+(self.heigth/2), -yOffset-(self.width/2))
+                      
+            self.pt_oppose = None
         
+        
+        # set cursor to these coords
+        if self.pt_oppose <> None:
+            global_point = self.canvas.mapToGlobal(self.toCanvasCoordinates( QgsPoint(self.pt_oppose.x()+self.xc, self.pt_oppose.y()+self.yc)))
+            cursor = QCursor()
+            cursor.setPos(global_point.x(), global_point.y())
+                
         #Création du polygon selon les points
         points = [self.pt1, self.pt2, self.pt3, self.pt4]
         polygon = [QgsPoint(i[0]+self.xc,i[1]+self.yc) for i in points]
         
         #Création du polygone
-        self.rb.setToGeometry(QgsGeometry.fromPolygon([polygon]), None)    
+        self.rb.setToGeometry(QgsGeometry.fromPolygon([polygon]), None)  
         
         #Affichage du polygone
         self.canvas.refresh()
@@ -167,10 +192,13 @@ class RectDigitTool(QgsMapTool):
         polygon = [QgsPoint(i[0]+self.xc,i[1]+self.yc) for i in points]
         
         #Création du polygone
-        self.rb.setToGeometry(QgsGeometry.fromPolygon([polygon]), None)    
+        self.rb.setToGeometry(QgsGeometry.fromPolygon([polygon]), None)
         
+        #Récupération du centre du rectangle
+        pto=self.rb.asGeometry().boundingBox().center()
         
-        
+        #Calcul du degres
+       
         
         #self.rb.setToGeometry(geom, None)
         
@@ -190,9 +218,7 @@ class RectDigitTool(QgsMapTool):
             
             #Affichage du polygone
             self.canvas.refresh()
-            
-        
-        
+                    
     def showSettingsWarning(self):
         pass
     
@@ -214,9 +240,101 @@ class RectDigitTool(QgsMapTool):
     def SetWidth(self, width):
         self.width = width
         
-        
     def SetHeigth(self, heigth):
         self.heigth = heigth
-       
-
         
+ #   def Rotate(self):
+        #// cx, cy - center of square coordinates
+        #// x, y - coordinates of a corner point of the square
+        #// theta is the angle of rotation
+
+        #// translate point to origin
+        #float tempX = x - cx;
+        #float tempY = y - cy;
+
+        #// now apply rotation
+        #float rotatedX = tempX*cos(theta) - tempY*sin(theta);
+        #float rotatedY = tempX*sin(theta) + tempY*cos(theta);
+
+        #// translate back
+        #x = rotatedX + cx;
+        #y = rotatedY + cy;
+
+        #Apply this to all 4 corners and you are done!
+        
+        
+        
+        
+        #def rotatePoint(self, angle, point, origin):
+        #    sinT = sin(radians(angle))
+        #    cosT = cos(radians(angle))
+        #    return (origin[0] + (cosT * (point[0] - origin[0]) - sinT * (point[1] - origin[1])),
+        #                  origin[1] + (sinT * (point[0] - origin[0]) + cosT * (point[1] - origin[1])))
+
+        #def rotateRect(self, degrees):
+        #    center = (self.collideRect.centerx, self.collideRect.centery)
+        #    self.collideRect.topleft = self.rotatePoint(degrees, self.collideRect.topleft, center)
+        #    self.collideRect.topright = self.rotatePoint(degrees, self.collideRect.topright, center)
+        #    self.collideRect.bottomleft = self.rotatePoint(degrees, self.collideRect.bottomleft, center)
+        #    self.collideRect.bottomright = self.rotatePoint(degrees, self.collideRect.bottomright, center)
+       
+    #def calcAngleExistant(p1, p2):
+    #    """
+    #    Return the angle of the line represents by two points : p1 and p2
+
+    #    :param p1: The first point
+    #    :param p2: The second point
+    #    :type p1: QgsPoint
+    #    :type p2: QgsPoint
+    #    :return: Return the angle (degre)
+    #    :rtype: float
+    #    """
+
+    #    a = calcPente(p1, p2) # The slope of the segment p1-p2
+    #    length_p1p2 = QgsDistanceArea().measureLine(p1, p2) # Hypothenuse
+    #    length_adjacent = fabs(p2.y() - p1.y()) # Adjacent
+    #    if length_p1p2 == 0: # Normally you can't have a length of 0 but avoid division by zero
+    #        angle_CAB = 0
+    #    else:
+    #        angle_CAB = acos(length_adjacent/length_p1p2) #
+
+        # Correction of angle_CAB
+    #    if a<0:
+    #        angle_CAB = angle_CAB - pi/2
+    #    elif a>0:
+    #        angle_CAB = pi/2 - angle_CAB
+
+    #    return angle_CAB
+        
+    
+    #def calcPente(p1, p2):
+    #    """
+    #    Return the slope of the line represents by two points : p1 and p2
+
+    #    :param p1: The first point
+    #    :param p2: The second point
+    #    :type p1: QgsPoint
+    #    :type p2: QgsPoint
+    #    :return: Return the slope (degre)
+    #    :rtype: float
+    #    """
+
+    #    num = p1.x() - p2.x()
+    #    denum = p1.y() - p2.y()
+
+        # Avoid division by zero
+    #    if num == 0:
+            # Return a negative value if denum > 0
+    #        if denum > 0:
+    #            return -90
+    #        else:
+            # else return a positive value
+    #            return 90
+        # Same as above with denum
+    #    elif denum == 0:
+    #        if num > 0:
+    #            return -90
+    #        else:
+    #            return 90
+    #    else:
+    #        return denum/num
