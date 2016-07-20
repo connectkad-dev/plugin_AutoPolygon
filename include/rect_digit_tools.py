@@ -90,8 +90,7 @@ class RectDigitTool(QgsMapTool):
             pointMap = self.toMapCoordinates(layer, point)
             self.xc = pointMap.x()
             self.yc = pointMap.y()
-                                    
-            
+                                                
             self.currx = snappoint.x()
             self.curry = snappoint.y()
             
@@ -181,31 +180,37 @@ class RectDigitTool(QgsMapTool):
     
     def canvasMoveEvent(self,event):
 
-        #Récupération du point pour snapper
-        x = event.pos().x()
-        y = event.pos().y()
-        selPoint = QPoint(x,y)
-        (retval,result) = self.snapper.snapToBackgroundLayers(selPoint)
+        if not self.rb:
         
-        #the point we want to have, is either from snapping result
-        if result  <> []:
-            snappoint = result[0].snappedVertex               
-        #or its some point from out in the wild
-        else:
-            snappoint =  QgsMapToPixel.toMapCoordinates(self.canvas.getCoordinateTransform (), x, y)
-    
+            if event.pos() <> None:
+                #Récupération du point pour snapper
+                x = event.pos().x()
+                y = event.pos().y()
+                selPoint = QPoint(x,y)
+                (retval,result) = self.snapper.snapToBackgroundLayers(selPoint)
+                
+                if self.snaprb <> None:
+                    self.snaprb.reset()
+                    
+                snappoint = None
+                #the point we want to have, is either from snapping result
+                if result  <> []:
+                    snappoint = result[0].snappedVertex
+                    
+                if snappoint <> None:                    
+                    if self.snaprb == None:
+                        color = QColor(255,0,0,125)
+                        self.snaprb = QgsRubberBand(self.canvas, True)
+                        self.snaprb.setColor(color)
+                        self.snaprb.setWidth(4)	
+                        self.snaprb.setIconSize(4)
+                    
+                    self.snaprb.setToGeometry(QgsGeometry.fromPoint(snappoint), None)
+                
+            return
+        
         if self.snaprb <> None:
             self.snaprb.reset()
-            
-        color = QColor(255,0,0,125)
-        self.snaprb = QgsRubberBand(self.canvas, True)
-        self.snaprb.setColor(color)
-        self.snaprb.setWidth(1)
-        
-        self.snaprb.setToGeometry(QgsGeometry.fromPoint(snappoint), None)  
-                
-        if not self.rb:return
-
         #Recalcul du rectangle
         
         # Récupération du point en cours selon les coordonnées
@@ -214,7 +219,8 @@ class RectDigitTool(QgsMapTool):
         pointMap = self.toMapCoordinates(layer, point)
         
         #pto = self.rb.asGeometry().boundingBox().center()
-            
+        
+        snappoint = None    
         #Si on a demandé un  positionnement en bas
         if self.position_pnt == "Bottom Left" or self.position_pnt == "Bottom Right":
         
@@ -224,6 +230,17 @@ class RectDigitTool(QgsMapTool):
             if self.position_pnt == "Bottom Left":
                 pt1 = self.pt1
                 pt2 = QgsPoint(pointMap.x()-self.xc,pointMap.y()-self.yc)
+                                
+                selPoint=self.toCanvasCoordinates(QgsPoint(pt2.x()+self.xc, pt2.y()+self.yc))                
+                #Récupération du point pour snapper
+                (retval,result) = self.snapper.snapToBackgroundLayers(QPoint(selPoint.x(),selPoint.y()))
+       
+                #the point we want to have, is either from snapping result
+                if result  <> []:
+                    snappoint = result[0].snappedVertex
+                    selPoint = self.toMapCoordinates(layer, snappoint)
+                    selPoint = QgsPoint(selPoint.x()-self.xc, selPoint.y()-self.yc)
+                    pt2 = selPoint                    
                 
                 #Création d'une ligne
                 line = QgsGeometry.fromPolyline([pt1,pt2])
@@ -234,10 +251,23 @@ class RectDigitTool(QgsMapTool):
                 else:
                     pt2.setX(pt2.x() +(pt2.x()-pt1.x())/line.length()*(self.heigth-line.length()))
                     pt2.setY(pt2.y() +(pt2.y()-pt1.y())/line.length()*(self.heigth-line.length()))
+                    
+                    
             else:
                 pt1 = QgsPoint(pointMap.x()-self.xc,pointMap.y()-self.yc)
                 pt2 = self.pt2
                 
+                selPoint=self.toCanvasCoordinates(QgsPoint(pt1.x()+self.xc, pt1.y()+self.yc))                
+                #Récupération du point pour snapper
+                (retval,result) = self.snapper.snapToBackgroundLayers(QPoint(selPoint.x(),selPoint.y()))
+       
+                #the point we want to have, is either from snapping result
+                if result  <> []:
+                    snappoint = result[0].snappedVertex
+                    selPoint = self.toMapCoordinates(layer, snappoint)
+                    selPoint = QgsPoint(selPoint.x()-self.xc, selPoint.y()-self.yc)
+                    pt1 = selPoint   
+                    
                 #Création d'une ligne
                 line = QgsGeometry.fromPolyline([pt2,pt1])
                 
@@ -248,6 +278,18 @@ class RectDigitTool(QgsMapTool):
                     pt1.setX(pt1.x() +(pt1.x()-pt2.x())/line.length()*(self.heigth-line.length()))
                     pt1.setY(pt1.y() +(pt1.y()-pt2.y())/line.length()*(self.heigth-line.length()))
                                 
+                selPoint=self.toCanvasCoordinates(QgsPoint(pt1.x()+self.xc, pt1.y()+self.yc))                
+                #Récupération du point pour snapper
+                (retval,result) = self.snapper.snapToBackgroundLayers(QPoint(selPoint.x(),selPoint.y()))                
+                  
+                #the point we want to have, is either from snapping result
+                if result  <> []:
+                    snappoint = result[0].snappedVertex
+                    pt1 = QgsPoint(self.toMapCoordinates(layer,self.toLayerCoordinates(layer,snappoint)).x()-self.xc,self.toMapCoordinates(layer,self.toLayerCoordinates(layer,snappoint)).y()-self.yc)
+                #or its some point from out in the wild
+                else:
+                    snappoint =  QgsMapToPixel.toMapCoordinates(self.canvas.getCoordinateTransform (), x, y)
+                                       
             #Mise en place de la perpendiculaire au point voulu à une distance self.width
             
             #use the start point and end point to get a theta
@@ -276,6 +318,17 @@ class RectDigitTool(QgsMapTool):
                 pt3 = QgsPoint(pointMap.x()-self.xc,pointMap.y()-self.yc)
                 pt4 = self.pt4
                 
+                selPoint=self.toCanvasCoordinates(QgsPoint(pt3.x()+self.xc, pt3.y()+self.yc))                
+                #Récupération du point pour snapper
+                (retval,result) = self.snapper.snapToBackgroundLayers(QPoint(selPoint.x(),selPoint.y()))
+       
+                #the point we want to have, is either from snapping result
+                if result  <> []:
+                    snappoint = result[0].snappedVertex
+                    selPoint = self.toMapCoordinates(layer, snappoint)
+                    selPoint = QgsPoint(selPoint.x()-self.xc, selPoint.y()-self.yc)
+                    pt3 = selPoint   
+                    
                 #Création d'une ligne
                 line = QgsGeometry.fromPolyline([pt4,pt3])
                 
@@ -285,11 +338,34 @@ class RectDigitTool(QgsMapTool):
                 else:
                     pt3.setX(pt3.x() +(pt3.x()-pt4.x())/line.length()*(self.heigth-line.length()))
                     pt3.setY(pt3.y() +(pt3.y()-pt4.y())/line.length()*(self.heigth-line.length()))
+                    
+                selPoint=self.toCanvasCoordinates(QgsPoint(pt3.x()+self.xc, pt3.y()+self.yc))                
+                #Récupération du point pour snapper
+                (retval,result) = self.snapper.snapToBackgroundLayers(QPoint(selPoint.x(),selPoint.y()))
+                
+                #the point we want to have, is either from snapping result
+                if result  <> []:
+                    snappoint = result[0].snappedVertex
+                    pt3 = QgsPoint(self.toMapCoordinates(layer,self.toLayerCoordinates(layer,snappoint)).x()-self.xc,self.toMapCoordinates(layer,self.toLayerCoordinates(layer,snappoint)).y()-self.yc)
+                #or its some point from out in the wild
+                else:
+                    snappoint =  QgsMapToPixel.toMapCoordinates(self.canvas.getCoordinateTransform (), x, y)
                
             else:
                 pt4 = QgsPoint(pointMap.x()-self.xc,pointMap.y()-self.yc)
                 pt3 = self.pt3
                 
+                selPoint=self.toCanvasCoordinates(QgsPoint(pt4.x()+self.xc, pt4.y()+self.yc))                
+                #Récupération du point pour snapper
+                (retval,result) = self.snapper.snapToBackgroundLayers(QPoint(selPoint.x(),selPoint.y()))
+       
+                #the point we want to have, is either from snapping result
+                if result  <> []:
+                    snappoint = result[0].snappedVertex
+                    selPoint = self.toMapCoordinates(layer, snappoint)
+                    selPoint = QgsPoint(selPoint.x()-self.xc, selPoint.y()-self.yc)
+                    pt4 = selPoint   
+                    
                 #Création d'une ligne
                 line = QgsGeometry.fromPolyline([pt3,pt4])
                 
@@ -300,6 +376,17 @@ class RectDigitTool(QgsMapTool):
                     pt4.setX(pt4.x() +(pt4.x()-pt3.x())/line.length()*(self.heigth-line.length()))
                     pt4.setY(pt4.y() +(pt4.y()-pt3.y())/line.length()*(self.heigth-line.length()))
                
+                selPoint=self.toCanvasCoordinates(QgsPoint(pt4.x()+self.xc, pt4.y()+self.yc))                
+                #Récupération du point pour snapper
+                (retval,result) = self.snapper.snapToBackgroundLayers(QPoint(selPoint.x(),selPoint.y()))
+                
+                #the point we want to have, is either from snapping result
+                if result  <> []:
+                    snappoint = result[0].snappedVertex
+                    pt4 = QgsPoint(self.toMapCoordinates(layer,self.toLayerCoordinates(layer,snappoint)).x()-self.xc,self.toMapCoordinates(layer,self.toLayerCoordinates(layer,snappoint)).y()-self.yc)
+                #or its some point from out in the wild
+                else:
+                    snappoint =  QgsMapToPixel.toMapCoordinates(self.canvas.getCoordinateTransform (), x, y)
                      
             #Mise en place de la perpendiculaire au point voulu à une distance self.width
         
@@ -324,7 +411,7 @@ class RectDigitTool(QgsMapTool):
             
         else:
         
-            # A REVOIR
+            # A REVOIR + VOIR SNAP CENTRE
             center = self.rb.asGeometry().boundingBox().center()            
             angle = center.azimuth(point)
             #self.rb.reset(True)        
@@ -343,7 +430,21 @@ class RectDigitTool(QgsMapTool):
             self.pt2 = pt2
             self.pt3 = pt3        
             self.pt4 = pt4
-                            
+            
+            if self.snaprb <> None:
+                self.snaprb.reset()
+                
+            #Mise en place du snap s'il y en a un
+            if snappoint <> None:
+                
+                if self.snaprb == None:
+                    color = QColor(255,0,0,125)
+                    self.snaprb = QgsRubberBand(self.canvas, True)
+                    self.snaprb.setColor(color)
+                    self.snaprb.setWidth(4)	
+                
+                self.snaprb.setToGeometry(QgsGeometry.fromPoint(snappoint), None)
+                                        
     #Au relachement du clic
     def canvasReleaseEvent(self,event):
     
