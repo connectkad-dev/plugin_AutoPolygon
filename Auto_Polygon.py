@@ -267,12 +267,12 @@ class AutoPolygon:
         # A la fin de la saisie, on appel la fonction createFeature
         QObject.connect(self.rectdigittool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)
         
-        self.iface.messageBar().pushMessage(
-                    self.tr(u'&Rennes Metropole Test'),
-                    self.tr(u'Rennes Metropole Test'),
-                    level=QgsMessageBar.INFO,
-                    duration=3
-                )
+        #self.iface.messageBar().pushMessage(
+        #            self.tr(u'&Rennes Metropole Test'),
+        #            self.tr(u'Rennes Metropole Test'),
+        #            level=QgsMessageBar.INFO,
+        #            duration=3
+        #        )
 
     #Création de l'objet
     def createFeature(self, geom):
