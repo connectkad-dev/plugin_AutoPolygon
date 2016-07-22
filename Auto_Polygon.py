@@ -221,6 +221,9 @@ class AutoPolygon:
         #On se "connecte" à l'événement changement de couche
         QObject.connect(self.iface, SIGNAL("currentLayerChanged(QgsMapLayer*)"), self.toggle)
         
+        # A la fin de la saisie, on appel la fonction createFeature
+        QObject.connect(self.rectdigittool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)
+        
         # Par défaut, on met le bouton enabled à False
         self.rectdigitpoint.setEnabled(False)
         
@@ -303,16 +306,11 @@ class AutoPolygon:
         
         #self.rectdigitpoint.setChecked(True)       
         
+        #On déconnecte l'appel de la fonction  (au cas ou elle existerait déjà)
+        #QObject.disconnect(self.rectdigittool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)
         # A la fin de la saisie, on appel la fonction createFeature
-        QObject.connect(self.rectdigittool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)
-        
-        #self.iface.messageBar().pushMessage(
-        #            self.tr(u'&Rennes Metropole Test'),
-        #            self.tr(u'Rennes Metropole Test'),
-        #            level=QgsMessageBar.INFO,
-        #            duration=3
-        #        )
-        
+        #QObject.connect(self.rectdigittool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)
+                
     def rectcreate_line(self):
         self.canvas.setMapTool(self.rectdigittool)
         self.rectdigittools.setDefaultAction(self.rectdigitline)
@@ -326,8 +324,10 @@ class AutoPolygon:
                         level=QgsMessageBar.WARNING,
                         duration=3
                     )        
+        #On déconnecte l'appel de la fonction  (au cas ou elle existerait déjà)
+        #QObject.disconnect(self.rectdigittool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)
         # A la fin de la saisie, on appel la fonction createFeature
-        QObject.connect(self.rectdigittool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)
+        #QObject.connect(self.rectdigittool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)
         
 
     #Création de l'objet
@@ -346,8 +346,7 @@ class AutoPolygon:
             
             provider = layer.dataProvider()   
             f = QgsFeature()
-            
-            
+                        
             #On the Fly reprojection.
             if layerCRSSrsid != projectCRSSrsid:
                 geom.transform(QgsCoordinateTransform(projectCRSSrsid, layerCRSSrsid))
@@ -366,5 +365,6 @@ class AutoPolygon:
             layer.beginEditCommand("Création d'objet")       
             layer.addFeature(f)
             layer.endEditCommand()
+            
         else:
             QObject.disconnect(self.rectdigittool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)

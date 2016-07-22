@@ -163,7 +163,7 @@ class RectDigitTool(QgsMapTool):
                     self.pt3 = QgsPoint(xOffset, yOffset)
                     self.pt4 = QgsPoint(xOffset-self.heigth, yOffset)
                     
-                    self.pt_oppose = self.pt4
+                    pt_oppose = self.pt4
                     
                 else:
                     #Sinon crée les points selon le centroide du rectange
@@ -223,8 +223,6 @@ class RectDigitTool(QgsMapTool):
                         ptf = self.rb.getPoint(0,1)
                         
                         #Récupération de la ligne
-                        #QMessageBox.information(None,  "Selection information",  str(ptd))
-                        #QMessageBox.information(None,  "Selection information",  str(ptf))
                         line = QgsGeometry.fromPolyline([ptd,ptf])
                                     
                         #Mise en place des rectangles
@@ -294,8 +292,7 @@ class RectDigitTool(QgsMapTool):
                 return
             
           
-        #Recalcul du rectangle
-        
+        # Si on a demandé de créer un rectanlge via un point        
         if self.type_saisie == "Point":
         
             if self.snaprb <> None:
@@ -305,9 +302,7 @@ class RectDigitTool(QgsMapTool):
             layer = self.canvas.currentLayer()        
             point = self.toLayerCoordinates(layer,event.pos())  
             pointMap = self.toMapCoordinates(layer, point)
-            
-            #pto = self.rb.asGeometry().boundingBox().center()
-            
+                        
             snappoint = None    
             #Si on a demandé un  positionnement en bas
             if self.position_pnt == "Bottom Left" or self.position_pnt == "Bottom Right":
@@ -316,186 +311,29 @@ class RectDigitTool(QgsMapTool):
                 pt4 = self.pt4
                 
                 if self.position_pnt == "Bottom Left":
-                    pt1 = self.pt1
-                    pt2 = QgsPoint(pointMap.x()-self.xc,pointMap.y()-self.yc)
-                                    
-                    selPoint=self.toCanvasCoordinates(QgsPoint(pt2.x()+self.xc, pt2.y()+self.yc))                
-                    #Récupération du point pour snapper
-                    (retval,result) = self.snapper.snapToBackgroundLayers(QPoint(selPoint.x(),selPoint.y()))
-           
-                    #the point we want to have, is either from snapping result
-                    if result  <> []:
-                        snappoint = result[0].snappedVertex
-                        selPoint = self.toMapCoordinates(layer, snappoint)
-                        selPoint = QgsPoint(selPoint.x()-self.xc, selPoint.y()-self.yc)
-                        pt2 = selPoint                    
-                    
-                    #Création d'une ligne
-                    line = QgsGeometry.fromPolyline([pt1,pt2])
-                    
-                    #On met le point en cours à la distance voulue (self.heigth)
-                    if line.length() > self.heigth:        
-                        pt2 = line.interpolate(self.heigth).asPoint()
-                    else:
-                        pt2.setX(pt2.x() +(pt2.x()-pt1.x())/line.length()*(self.heigth-line.length()))
-                        pt2.setY(pt2.y() +(pt2.y()-pt1.y())/line.length()*(self.heigth-line.length()))
-                        
-                        
+                    #Recalcul du point 2 selon un éventuel snap
+                    (pt2,pt1,snappoint) = self.CalculSnapPnt(QgsPoint(pointMap.x()-self.xc,pointMap.y()-self.yc),self.pt1)                                            
                 else:
-                    pt1 = QgsPoint(pointMap.x()-self.xc,pointMap.y()-self.yc)
-                    pt2 = self.pt2
-                    
-                    selPoint=self.toCanvasCoordinates(QgsPoint(pt1.x()+self.xc, pt1.y()+self.yc))                
-                    #Récupération du point pour snapper
-                    (retval,result) = self.snapper.snapToBackgroundLayers(QPoint(selPoint.x(),selPoint.y()))
-           
-                    #the point we want to have, is either from snapping result
-                    if result  <> []:
-                        snappoint = result[0].snappedVertex
-                        selPoint = self.toMapCoordinates(layer, snappoint)
-                        selPoint = QgsPoint(selPoint.x()-self.xc, selPoint.y()-self.yc)
-                        pt1 = selPoint   
-                        
-                    #Création d'une ligne
-                    line = QgsGeometry.fromPolyline([pt2,pt1])
-                    
-                    #On met le point en cours à la distance voulue (self.heigth)
-                    if line.length() > self.heigth:        
-                        pt1 = line.interpolate(self.heigth).asPoint()
-                    else:
-                        pt1.setX(pt1.x() +(pt1.x()-pt2.x())/line.length()*(self.heigth-line.length()))
-                        pt1.setY(pt1.y() +(pt1.y()-pt2.y())/line.length()*(self.heigth-line.length()))
-                                    
-                    selPoint=self.toCanvasCoordinates(QgsPoint(pt1.x()+self.xc, pt1.y()+self.yc))                
-                    #Récupération du point pour snapper
-                    (retval,result) = self.snapper.snapToBackgroundLayers(QPoint(selPoint.x(),selPoint.y()))                
-                      
-                    #the point we want to have, is either from snapping result
-                    if result  <> []:
-                        snappoint = result[0].snappedVertex
-                        pt1 = QgsPoint(self.toMapCoordinates(layer,self.toLayerCoordinates(layer,snappoint)).x()-self.xc,self.toMapCoordinates(layer,self.toLayerCoordinates(layer,snappoint)).y()-self.yc)
-                    #or its some point from out in the wild
-                    else:
-                        snappoint =  QgsMapToPixel.toMapCoordinates(self.canvas.getCoordinateTransform (), x, y)
-                                           
-                #Mise en place de la perpendiculaire au point voulu à une distance self.width
+                    #Recalcul du point 1 selon un éventuel snap
+                    (pt1,pt2,snappoint) = self.CalculSnapPnt(QgsPoint(pointMap.x()-self.xc,pointMap.y()-self.yc),self.pt2)
                 
-                #use the start point and end point to get a theta
-                polarcoor = CartesianToPolar((pt1.x(),pt1.y()), (pt2.x(),pt2.y()))
-                
-                #Add and subtract the 90 degrees in radians from the line...      
-                ends = AddAndSubtractRadians(polarcoor[1])      
-                firstend = PolarToCartesian((float(self.width),float(ends[0]))) 
-                
-                #Calcul des coordonnées à droite de la ligne
-                #secondend = PolarToCartesian((float(self.width),float(ends[1])))  
-                
-                #Calcul des coordonnées à gauche de la ligne
-                pt3.setX(pt2.x() + firstend[0])
-                pt3.setY(pt2.y() + firstend[1])        
-                             
-                pt4.setX(pt1.x() + firstend[0])
-                pt4.setY(pt1.y() + firstend[1])
+                #Calcul des perpendiculaire gauche
+                (pt4,pt3) = self.CalculPerpendicul(pt1,pt2,"Left")                
             
             #Si on a demandé un  positionnement en haut
             elif self.position_pnt == "Top Left" or self.position_pnt == "Top Right":   
                 pt1 = self.pt1
                 pt2 = self.pt2
                 
-                if self.position_pnt == "Top Left":
-                    pt3 = QgsPoint(pointMap.x()-self.xc,pointMap.y()-self.yc)
-                    pt4 = self.pt4
-                    
-                    selPoint=self.toCanvasCoordinates(QgsPoint(pt3.x()+self.xc, pt3.y()+self.yc))                
-                    #Récupération du point pour snapper
-                    (retval,result) = self.snapper.snapToBackgroundLayers(QPoint(selPoint.x(),selPoint.y()))
-           
-                    #the point we want to have, is either from snapping result
-                    if result  <> []:
-                        snappoint = result[0].snappedVertex
-                        selPoint = self.toMapCoordinates(layer, snappoint)
-                        selPoint = QgsPoint(selPoint.x()-self.xc, selPoint.y()-self.yc)
-                        pt3 = selPoint   
-                        
-                    #Création d'une ligne
-                    line = QgsGeometry.fromPolyline([pt4,pt3])
-                    
-                    #On met le point en cours à la distance voulue (self.heigth)
-                    if line.length() > self.heigth:        
-                        pt3 = line.interpolate(self.heigth).asPoint()
-                    else:
-                        pt3.setX(pt3.x() +(pt3.x()-pt4.x())/line.length()*(self.heigth-line.length()))
-                        pt3.setY(pt3.y() +(pt3.y()-pt4.y())/line.length()*(self.heigth-line.length()))
-                        
-                    selPoint=self.toCanvasCoordinates(QgsPoint(pt3.x()+self.xc, pt3.y()+self.yc))                
-                    #Récupération du point pour snapper
-                    (retval,result) = self.snapper.snapToBackgroundLayers(QPoint(selPoint.x(),selPoint.y()))
-                    
-                    #the point we want to have, is either from snapping result
-                    if result  <> []:
-                        snappoint = result[0].snappedVertex
-                        pt3 = QgsPoint(self.toMapCoordinates(layer,self.toLayerCoordinates(layer,snappoint)).x()-self.xc,self.toMapCoordinates(layer,self.toLayerCoordinates(layer,snappoint)).y()-self.yc)
-                    #or its some point from out in the wild
-                    else:
-                        snappoint =  QgsMapToPixel.toMapCoordinates(self.canvas.getCoordinateTransform (), x, y)
-                   
-                else:
-                    pt4 = QgsPoint(pointMap.x()-self.xc,pointMap.y()-self.yc)
-                    pt3 = self.pt3
-                    
-                    selPoint=self.toCanvasCoordinates(QgsPoint(pt4.x()+self.xc, pt4.y()+self.yc))                
-                    #Récupération du point pour snapper
-                    (retval,result) = self.snapper.snapToBackgroundLayers(QPoint(selPoint.x(),selPoint.y()))
-           
-                    #the point we want to have, is either from snapping result
-                    if result  <> []:
-                        snappoint = result[0].snappedVertex
-                        selPoint = self.toMapCoordinates(layer, snappoint)
-                        selPoint = QgsPoint(selPoint.x()-self.xc, selPoint.y()-self.yc)
-                        pt4 = selPoint   
-                        
-                    #Création d'une ligne
-                    line = QgsGeometry.fromPolyline([pt3,pt4])
-                    
-                    #On met le point en cours à la distance voulue (self.heigth)
-                    if line.length() > self.heigth:        
-                        pt4 = line.interpolate(self.heigth).asPoint()
-                    else:
-                        pt4.setX(pt4.x() +(pt4.x()-pt3.x())/line.length()*(self.heigth-line.length()))
-                        pt4.setY(pt4.y() +(pt4.y()-pt3.y())/line.length()*(self.heigth-line.length()))
-                   
-                    selPoint=self.toCanvasCoordinates(QgsPoint(pt4.x()+self.xc, pt4.y()+self.yc))                
-                    #Récupération du point pour snapper
-                    (retval,result) = self.snapper.snapToBackgroundLayers(QPoint(selPoint.x(),selPoint.y()))
-                    
-                    #the point we want to have, is either from snapping result
-                    if result  <> []:
-                        snappoint = result[0].snappedVertex
-                        pt4 = QgsPoint(self.toMapCoordinates(layer,self.toLayerCoordinates(layer,snappoint)).x()-self.xc,self.toMapCoordinates(layer,self.toLayerCoordinates(layer,snappoint)).y()-self.yc)
-                    #or its some point from out in the wild
-                    else:
-                        snappoint =  QgsMapToPixel.toMapCoordinates(self.canvas.getCoordinateTransform (), x, y)
-                         
-                #Mise en place de la perpendiculaire au point voulu à une distance self.width
-            
-                #use the start point and end point to get a theta
-                polarcoor = CartesianToPolar((pt4.x(),pt4.y()), (pt3.x(),pt3.y()))
-                
-                #Add and subtract the 90 degrees in radians from the line...      
-                ends = AddAndSubtractRadians(polarcoor[1])  
-                
-                #Calcul des coordonnées à gauche de la ligne   
-                #firstend = PolarToCartesian((float(self.width),float(ends[0]))) 
-                
-                #Calcul des coordonnées à droite de la ligne
-                secondend = PolarToCartesian((float(self.width),float(ends[1]))) 
-                
-                #Calcul des coordonnées à gauche de la ligne
-                pt2.setX(pt3.x() + secondend[0])
-                pt2.setY(pt3.y() + secondend[1])        
-                             
-                pt1.setX(pt4.x() + secondend[0])
-                pt1.setY(pt4.y() + secondend[1])
+                if self.position_pnt == "Top Left":                
+                   #Recalcul du point 3 selon un éventuel snap
+                   (pt3,pt4,snappoint) = self.CalculSnapPnt(QgsPoint(pointMap.x()-self.xc,pointMap.y()-self.yc),self.pt4)                                           
+                else:                
+                   #Recalcul du point 3 selon un éventuel snap
+                   (pt4,pt3,snappoint) = self.CalculSnapPnt(QgsPoint(pointMap.x()-self.xc,pointMap.y()-self.yc),self.pt3)
+                                          
+                #Calcul des perpendiculaire droite
+                (pt1,pt2) = self.CalculPerpendicul(pt4,pt3,"Right")
                 
             else:
             
@@ -534,13 +372,12 @@ class RectDigitTool(QgsMapTool):
                     self.snaprb.setToGeometry(QgsGeometry.fromPoint(snappoint), None)
                     
         elif self.type_saisie == "Line":
-            
+                        
             #Récupération du point pour snapper (si le point de snap n'est pas null)            
             if snappoint <> None:
                 point = snappoint
             else:   
                 point =  QgsMapToPixel.toMapCoordinates(self.canvas.getCoordinateTransform (), x, y)
-                
                 
             position = 0 
             
@@ -553,45 +390,34 @@ class RectDigitTool(QgsMapTool):
                 ptf = QgsPoint(point)
             elif self.rb.numberOfVertices() > 2:                
                 ptf = self.rb.getPoint(0,1)
-                   
+                
                 #Détermination de la position du curseur par rapport à la ligne (=0 sur la ligne, >0 au dessus de la ligne, <0 en dessous de la ligne)
                 position = (ptf.x() - ptd.x()) * (point.y() - ptd.y()) - (ptf.y() - ptd.y()) * (point.x() - ptd.x())
                 
-            #QMessageBox.information(None,  "Selection information",  str(ptf))
-            line = QgsGeometry.fromPolyline([ptd,ptf])
-                        
-            #Mise en place des rectangles
-            for i in range(0, int(floor(line.length()/self.heigth))):                              
-                pt1 = line.interpolate(self.heigth*i).asPoint()
-                pt2 = line.interpolate(self.heigth*(i+1)).asPoint()
-                
-                #use the start point and end point to get a theta
-                polarcoor = CartesianToPolar((pt1.x(),pt1.y()), (pt2.x(),pt2.y()))
-                
-                #Add and subtract the 90 degrees in radians from the line...      
-                ends = AddAndSubtractRadians(polarcoor[1])      
-                firstend = PolarToCartesian((float(self.width),float(ends[0])))
-                
-                #Si on est en dessous de la ligne, on inverse l'affichage des rectangles
-                if position <0:
-                    firstend[0]=firstend[0]*-1
-                    firstend[1]=firstend[1]*-1
-                
-                #Calcul des coordonnées à gauche de la ligne
-                pt3 = QgsPoint(pt2.x() + firstend[0],pt2.y() + firstend[1])   
-                pt4 = QgsPoint(pt1.x() + firstend[0],pt1.y() + firstend[1])      
-                                                 
-                #Création du polygon selon les points
-                points = [pt1, pt2, pt3, pt4]
-                polygon = [QgsPoint(i[0],i[1]) for i in points]                        
-                
-                #Création du polygone
-                
-                #layer = self.canvas.currentLayer()    
-                self.rbline.addGeometry(QgsGeometry.fromPolygon([polygon]), None)  
-            
-            #QMessageBox.information(None,  "Selection information",  str(self.rb)) 
-                                        
+            if ptd <> None and ptf <> None:
+                line = QgsGeometry.fromPolyline([ptd,ptf])
+                            
+                #Mise en place des rectangles
+                for i in range(0, int(floor(line.length()/self.heigth))):                              
+                    pt1 = line.interpolate(self.heigth*i).asPoint()
+                    pt2 = line.interpolate(self.heigth*(i+1)).asPoint()
+                    
+                    if position <0:
+                        #Calcul des perpendiculaire gauche
+                        (pt4,pt3) = self.CalculPerpendicul(pt1,pt2,"Left",True)
+                    else:
+                        #Calcul des perpendiculaire gauche
+                        (pt4,pt3) = self.CalculPerpendicul(pt1,pt2,"Left",False) 
+                                                                     
+                    #Création du polygon selon les points
+                    points = [pt1, pt2, pt3, pt4]
+                    polygon = [QgsPoint(i[0],i[1]) for i in points]                        
+                    
+                    #Création du polygone
+                    self.rbline.addGeometry(QgsGeometry.fromPolygon([polygon]), None)
+            else:
+                self.rb.reset()
+                                       
     #Au relachement du clic
     def canvasReleaseEvent(self,event):
     
@@ -638,27 +464,18 @@ class RectDigitTool(QgsMapTool):
                         pt1 = line.interpolate(self.heigth*i).asPoint()
                         pt2 = line.interpolate(self.heigth*(i+1)).asPoint()
                         
-                        #use the start point and end point to get a theta
-                        polarcoor = CartesianToPolar((pt1.x(),pt1.y()), (pt2.x(),pt2.y()))
-                        
-                        #Add and subtract the 90 degrees in radians from the line...      
-                        ends = AddAndSubtractRadians(polarcoor[1])      
-                        firstend = PolarToCartesian((float(self.width),float(ends[0])))
-                         
-                        #Si on est en dessous de la ligne, on inverse l'affichage des rectangles
                         if position <0:
-                            firstend[0]=firstend[0]*-1
-                            firstend[1]=firstend[1]*-1
-                    
-                        #Calcul des coordonnées à gauche de la ligne
-                        pt3 = QgsPoint(pt2.x() + firstend[0],pt2.y() + firstend[1])   
-                        pt4 = QgsPoint(pt1.x() + firstend[0],pt1.y() + firstend[1])      
+                            #Calcul des perpendiculaire gauche
+                            (pt4,pt3) = self.CalculPerpendicul(pt1,pt2,"Left",True)
+                        else:
+                            #Calcul des perpendiculaire gauche
+                            (pt4,pt3) = self.CalculPerpendicul(pt1,pt2,"Left",False) 
                                                          
                         #Création du polygon selon les points
                         points = [pt1, pt2, pt3, pt4]
                         polygon = [QgsPoint(i[0],i[1]) for i in points]                        
                         
-                        #Création du polygone
+                        #Création du polygone dans la couche
                         self.rb.setToGeometry(QgsGeometry.fromPolygon([polygon]), None)                    
                         geom = self.rb.asGeometry()
                         self.emit(SIGNAL("rbFinished(PyQt_PyObject)"), geom)
@@ -666,15 +483,14 @@ class RectDigitTool(QgsMapTool):
                         
                     self.rb=None
                         
+                    #Mise à zéro de l'affichage temporaire
                     if self.rbline <> None:
                         self.rbline.reset()
                     self.rbline=None
                     
                     #Affichage du polygone
                     self.canvas.refresh()
-                    
-                    
-            
+                  
     def showSettingsWarning(self):
         pass
     
@@ -712,4 +528,73 @@ class RectDigitTool(QgsMapTool):
         
     def SetHeigth(self, heigth):
         self.heigth = heigth
+        
+    def CalculSnapPnt(self,pt_snap,pt_opp):
+    
+        layer = self.canvas.currentLayer()
+        snappoint = None
+                     
+        #Récupération du point pour snapper
+        selPoint=self.toCanvasCoordinates(QgsPoint(pt_snap.x()+self.xc, pt_snap.y()+self.yc))   
+        (retval,result) = self.snapper.snapToBackgroundLayers(QPoint(selPoint.x(),selPoint.y()))
+
+        #S'il y a un snap à faire
+        if result  <> []:
+        
+            #Récupération du snap et on snappe le point
+            snappoint = result[0].snappedVertex
+            selPoint = self.toMapCoordinates(layer, snappoint)
+            selPoint = QgsPoint(selPoint.x()-self.xc, selPoint.y()-self.yc)
+            pt_snap = selPoint                    
+        
+        #Création d'une ligne
+        line = QgsGeometry.fromPolyline([pt_opp,pt_snap])
+        
+        #On met le point en cours à la distance voulue (self.heigth)
+        if line.length() > self.heigth:        
+            pt_snap = line.interpolate(self.heigth).asPoint()
+        else:
+            pt_snap.setX(pt_snap.x() +(pt_snap.x()-pt_opp.x())/line.length()*(self.heigth-line.length()))
+            pt_snap.setY(pt_snap.y() +(pt_snap.y()-pt_opp.y())/line.length()*(self.heigth-line.length()))
+            
+        return (pt_snap,pt_opp,snappoint)
+    
+    def CalculPerpendicul(self,pt_deb,pt_fin,type = "Both",reverse = False):
+    
+        #use the start point and end point to get a theta
+        polarcoor = CartesianToPolar((pt_deb.x(),pt_deb.y()), (pt_fin.x(),pt_fin.y()))
+        
+        #Add and subtract the 90 degrees in radians from the line...      
+        ends = AddAndSubtractRadians(polarcoor[1])       
+        
+        #Calcul des coordonnées à gauche de la ligne
+        firstend = PolarToCartesian((float(self.width),float(ends[0])))  
+        
+        #Calcul des coordonnées à droite de la ligne
+        secondend = PolarToCartesian((float(self.width),float(ends[1])))
+        
+        #Si on a demandé à inversé le resultat
+        if reverse:
+            firstend[0]=firstend[0]*-1
+            firstend[1]=firstend[1]*-1
+            secondend[0]=secondend[0]*-1
+            secondend[1]=secondend[1]*-1
+                        
+        #Calcul des coordonnées à gauche de la ligne
+        pt_deb_perp_gauche=QgsPoint(pt_deb.x() + firstend[0],pt_deb.y() + firstend[1])
+        pt_fin_perp_gauche=QgsPoint(pt_fin.x() + firstend[0],pt_fin.y() + firstend[1])
+        
+        #Calcul des coordonnées à droite de la ligne
+        pt_deb_perp_droit=QgsPoint(pt_deb.x() + secondend[0],pt_deb.y() + secondend[1])
+        pt_fin_perp_droit=QgsPoint(pt_fin.x() + secondend[0],pt_fin.y() + secondend[1])
+       
+        #Si on a demandé de renvoyer les coordonnées à gauche de la ligne
+        if type == "Left":
+            return(pt_deb_perp_gauche,pt_fin_perp_gauche)            
+        #Si on a demandé de renvoyer les coordonnées à droite de la ligne
+        elif type == "Right":
+            return(pt_deb_perp_droit,pt_fin_perp_droit)
+        else:
+            #Si on a demandé de renvoyer les coordonnées à gauche et à droite de la ligne
+            return(pt_deb_perp_gauche,pt_fin_perp_gauche,pt_deb_perp_droit,pt_fin_perp_droit)
             
