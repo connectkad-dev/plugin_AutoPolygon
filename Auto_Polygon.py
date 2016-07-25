@@ -261,34 +261,39 @@ class AutoPolygon:
         layer = mc.currentLayer()
         #Decide whether the plugin button/menu is enabled or disabled
         if layer <> None:
-                                   
-            #Si la couche est éditable et que c'est la géométrie est de type polygone
-            if (layer.isEditable() and layer.geometryType() == 2):
-                                                                   
-                #On rend le bouton clickable
-                self.rectdigitpoint.setEnabled(True)
-                self.rectdigitline.setEnabled(True)
-
-                #On se "connecte" à l'évenèment de fin d'édition
-                QObject.connect(layer,SIGNAL("editingStopped()"),self.toggle)
-
-                #On se "déconnecte" à l'évenèment de début d'édition
-                QObject.disconnect(layer,SIGNAL("editingStarted()"),self.toggle) 
             
-            else:
-                #On rend le bouton inclickable
-                self.rectdigitpoint.setEnabled(False)
-                self.rectdigitline.setEnabled(False)
-                
-                if layer.geometryType() == 2:
-                    #On se "connecte" à l'évenèment de début d'édition
-                    QObject.connect(layer,SIGNAL("editingStarted()"),self.toggle)
-                else:
+            if layer.type() == QgsMapLayer.VectorLayer:
+                #Si la couche est éditable et que c'est la géométrie est de type polygone
+                if (layer.isEditable() and layer.geometryType() == 2):
+                                                                       
+                    #On rend le bouton clickable
+                    self.rectdigitpoint.setEnabled(True)
+                    self.rectdigitline.setEnabled(True)
+
+                    #On se "connecte" à l'évenèment de fin d'édition
+                    QObject.connect(layer,SIGNAL("editingStopped()"),self.toggle)
+
                     #On se "déconnecte" à l'évenèment de début d'édition
                     QObject.disconnect(layer,SIGNAL("editingStarted()"),self.toggle) 
                 
-                #On se "déconnecte" à l'évenèment de fin d'édition
-                QObject.disconnect(layer,SIGNAL("editingStopped()"),self.toggle)
+                else:
+                    #On rend le bouton inclickable
+                    self.rectdigitpoint.setEnabled(False)
+                    self.rectdigitline.setEnabled(False)
+                    
+                    if layer.geometryType() == 2:
+                        #On se "connecte" à l'évenèment de début d'édition
+                        QObject.connect(layer,SIGNAL("editingStarted()"),self.toggle)
+                    else:
+                        #On se "déconnecte" à l'évenèment de début d'édition
+                        QObject.disconnect(layer,SIGNAL("editingStarted()"),self.toggle) 
+                    
+                    #On se "déconnecte" à l'évenèment de fin d'édition
+                    QObject.disconnect(layer,SIGNAL("editingStopped()"),self.toggle)
+            else:
+                #On se "déconnecte" à l'évenèment de début d'édition
+                QObject.disconnect(layer,SIGNAL("editingStarted()"),self.toggle) 
+                
                 
     def rectcreate_point(self):
         self.canvas.setMapTool(self.rectdigittool)
