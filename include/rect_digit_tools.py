@@ -34,7 +34,7 @@ class RectDigitTool(QgsMapTool):
         self.width = 2
         
         #Initialisation de la longueur par défaut
-        self.heigth = 1
+        self.height = 1
                 
         #our own fancy cursor
         self.cursor = QCursor(QPixmap(["16 16 3 1",
@@ -129,8 +129,8 @@ class RectDigitTool(QgsMapTool):
                 if self.position_pnt == "Bottom Left":
                     
                     self.pt1 = QgsPoint(xOffset, yOffset)
-                    self.pt2 = QgsPoint(xOffset+self.heigth, yOffset)
-                    self.pt3 = QgsPoint(xOffset+self.heigth, yOffset+self.width)
+                    self.pt2 = QgsPoint(xOffset+self.height, yOffset)
+                    self.pt3 = QgsPoint(xOffset+self.height, yOffset+self.width)
                     self.pt4 = QgsPoint(xOffset, yOffset+self.width)
                                 
                     pt_oppose = self.pt2
@@ -138,10 +138,10 @@ class RectDigitTool(QgsMapTool):
                 #Si la position  du point est Bottom Right (bas droit)
                 elif self.position_pnt == "Bottom Right":
                     
-                    self.pt1 = QgsPoint(xOffset-self.heigth, yOffset)
+                    self.pt1 = QgsPoint(xOffset-self.height, yOffset)
                     self.pt2 = QgsPoint(xOffset, yOffset)
                     self.pt3 = QgsPoint(xOffset, yOffset+self.width)
-                    self.pt4 = QgsPoint(xOffset-self.heigth, yOffset+self.width)
+                    self.pt4 = QgsPoint(xOffset-self.height, yOffset+self.width)
                     
                     pt_oppose = self.pt1
                     
@@ -149,8 +149,8 @@ class RectDigitTool(QgsMapTool):
                 elif self.position_pnt == "Top Left":
                     
                     self.pt1 = QgsPoint(xOffset, yOffset-self.width)
-                    self.pt2 = QgsPoint(xOffset+self.heigth, yOffset-self.width)
-                    self.pt3 = QgsPoint(xOffset+self.heigth, yOffset)
+                    self.pt2 = QgsPoint(xOffset+self.height, yOffset-self.width)
+                    self.pt3 = QgsPoint(xOffset+self.height, yOffset)
                     self.pt4 = QgsPoint(xOffset, yOffset)
                     
                     pt_oppose = self.pt3
@@ -158,10 +158,10 @@ class RectDigitTool(QgsMapTool):
                 #Si la position  du point est Top Right (haut droit)
                 elif self.position_pnt == "Top Right":
                     
-                    self.pt1 = QgsPoint(xOffset-self.heigth, yOffset-self.width)
+                    self.pt1 = QgsPoint(xOffset-self.height, yOffset-self.width)
                     self.pt2 = QgsPoint(xOffset, yOffset-self.width)
                     self.pt3 = QgsPoint(xOffset, yOffset)
-                    self.pt4 = QgsPoint(xOffset-self.heigth, yOffset)
+                    self.pt4 = QgsPoint(xOffset-self.height, yOffset)
                     
                     pt_oppose = self.pt4
                     
@@ -169,17 +169,17 @@ class RectDigitTool(QgsMapTool):
                     #Sinon crée les points selon le centroide du rectange
                     
                     #On regarde si la taille est 1 et l'offset 0 (????)
-                    if self.heigth == 1 and xOffset == 0:
+                    if self.height == 1 and xOffset == 0:
                         xOffset = 0.5
 
                     #On regarde si la largueur est 1 et l'offset 0 (????)
                     if self.width == 1 and yOffset == 0:
                         yOffset = 0.5
                              
-                    self.pt1 = QgsPoint(-xOffset-(self.heigth/2), -yOffset-(self.width/2))
-                    self.pt2 = QgsPoint(-xOffset-(self.heigth/2), yOffset+(self.width/2))
-                    self.pt3 = QgsPoint(xOffset+(self.heigth/2), yOffset+(self.width/2))
-                    self.pt4 = QgsPoint(xOffset+(self.heigth/2), -yOffset-(self.width/2))
+                    self.pt1 = QgsPoint(-xOffset-(self.height/2), -yOffset-(self.width/2))
+                    self.pt2 = QgsPoint(-xOffset-(self.height/2), yOffset+(self.width/2))
+                    self.pt3 = QgsPoint(xOffset+(self.height/2), yOffset+(self.width/2))
+                    self.pt4 = QgsPoint(xOffset+(self.height/2), -yOffset-(self.width/2))
                               
                     pt_oppose = None        
                 
@@ -226,9 +226,9 @@ class RectDigitTool(QgsMapTool):
                         line = QgsGeometry.fromPolyline([ptd,ptf])
                                     
                         #Mise en place des rectangles
-                        for i in range(0, int(floor(line.length()/self.heigth))):                              
-                            pt1 = line.interpolate(self.heigth*i).asPoint()
-                            pt2 = line.interpolate(self.heigth*(i+1)).asPoint()
+                        for i in range(0, int(floor(line.length()/self.height))):                              
+                            pt1 = line.interpolate(self.height*i).asPoint()
+                            pt2 = line.interpolate(self.height*(i+1)).asPoint()
                             
                             #use the start point and end point to get a theta
                             polarcoor = CartesianToPolar((pt1.x(),pt1.y()), (pt2.x(),pt2.y()))
@@ -398,9 +398,9 @@ class RectDigitTool(QgsMapTool):
                 line = QgsGeometry.fromPolyline([ptd,ptf])
                             
                 #Mise en place des rectangles
-                for i in range(0, int(floor(line.length()/self.heigth))):                              
-                    pt1 = line.interpolate(self.heigth*i).asPoint()
-                    pt2 = line.interpolate(self.heigth*(i+1)).asPoint()
+                for i in range(0, int(floor(line.length()/self.height))):                              
+                    pt1 = line.interpolate(self.height*i).asPoint()
+                    pt2 = line.interpolate(self.height*(i+1)).asPoint()
                     
                     if position <0:
                         #Calcul des perpendiculaire gauche
@@ -460,9 +460,9 @@ class RectDigitTool(QgsMapTool):
                     
                     self.rb.reset()
                     #Mise en place des rectangles
-                    for i in range(0, int(floor(line.length()/self.heigth))):                              
-                        pt1 = line.interpolate(self.heigth*i).asPoint()
-                        pt2 = line.interpolate(self.heigth*(i+1)).asPoint()
+                    for i in range(0, int(floor(line.length()/self.height))):                              
+                        pt1 = line.interpolate(self.height*i).asPoint()
+                        pt2 = line.interpolate(self.height*(i+1)).asPoint()
                         
                         if position <0:
                             #Calcul des perpendiculaire gauche
@@ -524,10 +524,17 @@ class RectDigitTool(QgsMapTool):
         return True
                 
     def SetWidth(self, width):
-        self.width = width
+        try:
+           self.width = float(width)
+        except ValueError:
+           print("That's not an float!")
+           
         
-    def SetHeigth(self, heigth):
-        self.heigth = heigth
+    def SetHeight(self, height):
+        try:
+           self.height = float(height)
+        except ValueError:
+           print("That's not an float!")
         
     def CalculSnapPnt(self,pt_snap,pt_opp):
     
@@ -550,12 +557,12 @@ class RectDigitTool(QgsMapTool):
         #Création d'une ligne
         line = QgsGeometry.fromPolyline([pt_opp,pt_snap])
         
-        #On met le point en cours à la distance voulue (self.heigth)
-        if line.length() > self.heigth:        
-            pt_snap = line.interpolate(self.heigth).asPoint()
+        #On met le point en cours à la distance voulue (self.height)
+        if line.length() > self.height:        
+            pt_snap = line.interpolate(self.height).asPoint()
         else:
-            pt_snap.setX(pt_snap.x() +(pt_snap.x()-pt_opp.x())/line.length()*(self.heigth-line.length()))
-            pt_snap.setY(pt_snap.y() +(pt_snap.y()-pt_opp.y())/line.length()*(self.heigth-line.length()))
+            pt_snap.setX(pt_snap.x() +(pt_snap.x()-pt_opp.x())/line.length()*(self.height-line.length()))
+            pt_snap.setY(pt_snap.y() +(pt_snap.y()-pt_opp.y())/line.length()*(self.height-line.length()))
             
         return (pt_snap,pt_opp,snappoint)
     

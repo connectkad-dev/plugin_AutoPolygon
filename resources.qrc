@@ -4,5 +4,6 @@
         <file>icons/rectangle.png</file>
         <file>icons/rectangle_point.png</file>
         <file>icons/rectangle_line.png</file>
+        <file>icons/option.png</file>
     </qresource>
 </RCC>

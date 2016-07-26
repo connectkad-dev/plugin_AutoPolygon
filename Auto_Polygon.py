@@ -27,7 +27,9 @@ import resources_rc
 
 # Import the code for the dialog
 from Auto_Polygon_dialog import AutoPolygonDialog
+from options_dialog import OptionsDialog
 import os.path
+import ConfigParser
 
 # Import qgis api
 from qgis.core import *
@@ -72,8 +74,14 @@ class AutoPolygon:
             if qVersion() > '4.3.3':
                 QCoreApplication.installTranslator(self.translator)
 
+        #Configuration 
+        self.config = ConfigParser.RawConfigParser()
+        #self.config.add_section('RECTANGLE')
+                
         # Create the dialog (after translation) and keep reference
         self.dlg = AutoPolygonDialog()
+        
+        self.dlg_options = OptionsDialog()
 
         # Declare instance attributes
         self.actions = []
@@ -199,25 +207,28 @@ class AutoPolygon:
         
         # Récupération de l'outil pour digitaliser un rectangle
         self.rectdigittool = RectDigitTool( self.canvas )
-        result = self.rectdigittool.SetPositionPoint("Bottom Left")
+                
+        #Configuration de l'outil de rectangle
+        self.RectMaj()
         
-        if result is not None :
-            self.iface.messageBar().pushMessage(
-                        self.tr(u'Warning'),
-                        self.tr(result),
-                        level=QgsMessageBar.WARNING,
-                        duration=3
-                    )
-                    
         #Outils de création de polygone
         self.rectdigittools = QToolButton(self.toolbar)
         self.rectdigittools.setPopupMode(QToolButton.MenuButtonPopup)
         
         self.rectdigittools.addActions( [ self.rectdigitpoint, self.rectdigitline ] )
         self.rectdigittools.setDefaultAction(self.rectdigitpoint)        
-        self.toolbar.addWidget(self.rectdigittools)     
-                    
-                    
+        self.toolbar.addWidget(self.rectdigittools)  
+
+        # Création du bouton d'option
+        icon_path = ':/plugins/AutoPolygon/icons/option.png'
+        self.options_conf = self.add_action(
+            icon_path,
+            text=self.tr(u'Options'),
+            callback=self.options,
+             add_to_menu=True,
+             add_to_toolbar=True,
+            parent=self.iface.mainWindow())        
+                           
         #On se "connecte" à l'événement changement de couche
         QObject.connect(self.iface, SIGNAL("currentLayerChanged(QgsMapLayer*)"), self.toggle)
         
@@ -373,3 +384,48 @@ class AutoPolygon:
             
         else:
             QObject.disconnect(self.rectdigittool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)
+            
+    def options(self):
+        #Affichage de la fenêtre des options
+        """Run method that performs all the real work"""
+        # show the dialog
+        self.dlg_options.show()
+        # Run the dialog event loop
+        result = self.dlg_options.exec_()
+        # See if OK was pressed
+        if result:
+            # Do something useful here - delete the line containing pass and
+            # substitute with your code.
+            
+            #Configuration de l'outil de rectangle
+            self.RectMaj()
+            
+            pass
+     
+    def RectMaj(self):
+        #Configuration de l'outil de rectangle
+        try: self.config.read( self.plugin_dir+'/AutoPolygon.cfg' )
+        except: return
+        try: 
+            width=self.config.getfloat('RECTANGLE','width')
+            height=self.config.getfloat('RECTANGLE','height')
+            position=self.config.get('RECTANGLE','position')
+        except: 
+            #S'il n'y eu des erreurs, on met les valeurs par défaut
+            width=2
+            height=1
+            position="Bottom Left"
+            
+        self.rectdigittool.SetWidth (width)
+        self.rectdigittool.SetHeight (height)
+        result = self.rectdigittool.SetPositionPoint(position)
+        
+        #Si la position n'existe pas
+        if result is not None :
+            self.iface.messageBar().pushMessage(
+                        self.tr(u'Warning'),
+                        self.tr(result),
+                        level=QgsMessageBar.WARNING,
+                        duration=3
+                    )
+        
