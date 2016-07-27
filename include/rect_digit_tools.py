@@ -383,6 +383,7 @@ class RectDigitTool(QgsMapTool):
             
             #Récupération de la ligne
             ptd = self.rb.getPoint(0,0)
+            ptf = None
             
             #Si ce n'est pas un click droit
             if not self.clickright:                
@@ -393,7 +394,7 @@ class RectDigitTool(QgsMapTool):
                 
                 #Détermination de la position du curseur par rapport à la ligne (=0 sur la ligne, >0 au dessus de la ligne, <0 en dessous de la ligne)
                 position = (ptf.x() - ptd.x()) * (point.y() - ptd.y()) - (ptf.y() - ptd.y()) * (point.x() - ptd.x())
-                
+     
             if ptd <> None and ptf <> None:
                 line = QgsGeometry.fromPolyline([ptd,ptf])
                             
@@ -557,12 +558,13 @@ class RectDigitTool(QgsMapTool):
         #Création d'une ligne
         line = QgsGeometry.fromPolyline([pt_opp,pt_snap])
         
-        #On met le point en cours à la distance voulue (self.height)
-        if line.length() > self.height:        
-            pt_snap = line.interpolate(self.height).asPoint()
-        else:
-            pt_snap.setX(pt_snap.x() +(pt_snap.x()-pt_opp.x())/line.length()*(self.height-line.length()))
-            pt_snap.setY(pt_snap.y() +(pt_snap.y()-pt_opp.y())/line.length()*(self.height-line.length()))
+        if line.length() > 0:
+            #On met le point en cours à la distance voulue (self.height)
+            if line.length() >= self.height:        
+                pt_snap = line.interpolate(self.height).asPoint()
+            else:
+                pt_snap.setX(pt_snap.x() +(pt_snap.x()-pt_opp.x())/line.length()*(self.height-line.length()))
+                pt_snap.setY(pt_snap.y() +(pt_snap.y()-pt_opp.y())/line.length()*(self.height-line.length()))
             
         return (pt_snap,pt_opp,snappoint)
     
