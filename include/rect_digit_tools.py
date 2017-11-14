@@ -8,8 +8,8 @@ from qgis.gui import *
 from math import *
 from calc import *
 
-list_position = ["Center","Bottom Left","Bottom Right","Top Left","Top Right"]
-list_type_saisie = ["Point","Line"]
+list_position = []
+list_type_saisie = []
 
 # Tool class
 class RectDigitTool(QgsMapTool):
@@ -18,22 +18,28 @@ class RectDigitTool(QgsMapTool):
         self.canvas=canvas
         self.snapper = QgsMapCanvasSnapper(self.canvas)
         
-        #self.rb=None
         self.xc = None
         self.yc = None
         
-        self.position_pnt = "Center"
+        #Initializing the type of position
+        list_position.append(self.tr(u'Center'))
+        list_position.append(self.tr(u'Bottom Left'))
+        list_position.append(self.tr(u'Bottom Right'))
+        list_position.append(self.tr(u'Top Left'))
+        list_position.append(self.tr(u'Top Right'))
+                                
+        #Initializing the type of geometrie
+        list_type_saisie.append('Point')
+        list_type_saisie.append('Line')
+                
+        self.position_pnt = self.tr(u'Center')
         
-        self.type_saisie = "Point"
-        
-        #Sert à savoir quand démarrer une ligne
-        self.started = False
-        self.lastPoint = None
-    
-        #Initialisation de la largeur par défaut
+        self.type_saisie = 'Point'
+            
+        #Initializing the default width
         self.width = 2
         
-        #Initialisation de la longueur par défaut
+        #Initializing the default height
         self.height = 1
                 
         #our own fancy cursor
@@ -63,8 +69,8 @@ class RectDigitTool(QgsMapTool):
         self.rbline = None
         self.clickright = False
     
-    #Définit le type de position de création de rectangle
-    def SetPositionPoint(self,position = "Center"):
+    #Defines the type of rectangle creating position
+    def SetPositionPoint(self,position = u'Center'):
         
         if position.upper() in str(list_position).upper():
             self.position_pnt = position
@@ -74,7 +80,7 @@ class RectDigitTool(QgsMapTool):
             
             
     def SetPositionTypeSaisie(self,type_saisie = "Point"):
-        
+                
         if type_saisie.upper() in str(list_type_saisie).upper():
             self.type_saisie = type_saisie
             return
@@ -126,7 +132,7 @@ class RectDigitTool(QgsMapTool):
                 #Calcul des 4 points 
                 
                 #Si la position  du point est Bottom Left (bas gauche)
-                if self.position_pnt == "Bottom Left":
+                if self.position_pnt == self.tr(u'Bottom Left'):
                     
                     self.pt1 = QgsPoint(xOffset, yOffset)
                     self.pt2 = QgsPoint(xOffset+self.height, yOffset)
@@ -136,7 +142,7 @@ class RectDigitTool(QgsMapTool):
                     pt_oppose = self.pt2
                                                      
                 #Si la position  du point est Bottom Right (bas droit)
-                elif self.position_pnt == "Bottom Right":
+                elif self.position_pnt == self.tr(u'Bottom Right'):
                     
                     self.pt1 = QgsPoint(xOffset-self.height, yOffset)
                     self.pt2 = QgsPoint(xOffset, yOffset)
@@ -146,7 +152,7 @@ class RectDigitTool(QgsMapTool):
                     pt_oppose = self.pt1
                     
                 #Si la position  du point est Top Left (haut gauche)
-                elif self.position_pnt == "Top Left":
+                elif self.position_pnt == self.tr(u'Top Left'):
                     
                     self.pt1 = QgsPoint(xOffset, yOffset-self.width)
                     self.pt2 = QgsPoint(xOffset+self.height, yOffset-self.width)
@@ -156,7 +162,7 @@ class RectDigitTool(QgsMapTool):
                     pt_oppose = self.pt3
                     
                 #Si la position  du point est Top Right (haut droit)
-                elif self.position_pnt == "Top Right":
+                elif self.position_pnt == self.tr(u'Top Right'):
                     
                     self.pt1 = QgsPoint(xOffset-self.height, yOffset-self.width)
                     self.pt2 = QgsPoint(xOffset, yOffset-self.width)
@@ -198,7 +204,7 @@ class RectDigitTool(QgsMapTool):
             
                 #Affichage du polygone
                 self.canvas.refresh()
-            elif self.type_saisie == "Line":
+            elif self.type_saisie == 'Line':
             
                 if event.button()  <> 2:
                     if self.rb <> None:
@@ -261,7 +267,7 @@ class RectDigitTool(QgsMapTool):
         self.rbline.setColor(color)
         self.rbline.setWidth(1)
             
-        if not self.rb or self.type_saisie == "Line":
+        if not self.rb or self.type_saisie == 'Line':
         
             if event.pos() <> None:
                 #Récupération du point pour snapper
@@ -305,12 +311,12 @@ class RectDigitTool(QgsMapTool):
                         
             snappoint = None    
             #Si on a demandé un  positionnement en bas
-            if self.position_pnt == "Bottom Left" or self.position_pnt == "Bottom Right":
+            if self.position_pnt == self.tr(u'Bottom Left') or self.position_pnt == self.tr(u'Bottom Right'):
             
                 pt3 = self.pt3
                 pt4 = self.pt4
                 
-                if self.position_pnt == "Bottom Left":
+                if self.position_pnt == self.tr(u'Bottom Left'):
                     #Recalcul du point 2 selon un éventuel snap
                     (pt2,pt1,snappoint) = self.CalculSnapPnt(QgsPoint(pointMap.x()-self.xc,pointMap.y()-self.yc),self.pt1)                                            
                 else:
@@ -321,11 +327,11 @@ class RectDigitTool(QgsMapTool):
                 (pt4,pt3) = self.CalculPerpendicul(pt1,pt2,"Left")                
             
             #Si on a demandé un  positionnement en haut
-            elif self.position_pnt == "Top Left" or self.position_pnt == "Top Right":   
+            elif self.position_pnt == self.tr(u'Top Left') or self.position_pnt == self.tr(u'Top Right'):   
                 pt1 = self.pt1
                 pt2 = self.pt2
                 
-                if self.position_pnt == "Top Left":                
+                if self.position_pnt == self.tr(u'Top Left'):                
                    #Recalcul du point 3 selon un éventuel snap
                    (pt3,pt4,snappoint) = self.CalculSnapPnt(QgsPoint(pointMap.x()-self.xc,pointMap.y()-self.yc),self.pt4)                                           
                 else:                
@@ -344,7 +350,7 @@ class RectDigitTool(QgsMapTool):
                 rotgeom = rotate(self.rb.asGeometry(), center, -(angle*pi/180))  
                 self.rb.setToGeometry( rotgeom, layer ) 
             
-            if self.position_pnt != "Center":
+            if self.position_pnt != self.tr(u'Center'):
                 #Création du polygon selon les points
                 points = [pt1, pt2, pt3, pt4]
                 polygon = [QgsPoint(i[0]+self.xc,i[1]+self.yc) for i in points]
@@ -371,7 +377,7 @@ class RectDigitTool(QgsMapTool):
                     
                     self.snaprb.setToGeometry(QgsGeometry.fromPoint(snappoint), None)
                     
-        elif self.type_saisie == "Line":
+        elif self.type_saisie == 'Line':
                         
             #Récupération du point pour snapper (si le point de snap n'est pas null)            
             if snappoint <> None:
@@ -441,7 +447,7 @@ class RectDigitTool(QgsMapTool):
             #Affichage du polygone
             self.canvas.refresh()
             
-        elif self.type_saisie == "Line":
+        elif self.type_saisie == 'Line':
             if event.button()  == 2 and self.rb <> None:
                 if self.rb.numberOfVertices() > 2:
                 

@@ -72,7 +72,7 @@ class OptionsDialog(QtGui.QDialog, FORM_CLASS):
         
         self.config.set('RECTANGLE','width',self.dsb_width.value())
         self.config.set('RECTANGLE','height', self.dsb_height.value())
-        self.config.set('RECTANGLE','position', self.cb_position.currentText())
+        self.config.set('RECTANGLE','position', self.cb_position.currentText().encode('utf-8').strip())
         
         with open(os.path.join(os.path.dirname(__file__), 'AutoPolygon.cfg'), 'wb') as configfile:
             self.config.write(configfile)

@@ -39,7 +39,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Largeur :</string>
+    <string>Width :</string>
    </property>
   </widget>
   <widget class="QDoubleSpinBox" name="dsb_width">
@@ -62,7 +62,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Longueur :</string>
+    <string>Heigth :</string>
    </property>
   </widget>
   <widget class="QDoubleSpinBox" name="dsb_height">

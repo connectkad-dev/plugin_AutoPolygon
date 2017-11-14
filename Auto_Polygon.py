@@ -54,8 +54,6 @@ class AutoPolygon:
         """
         # Save reference to the QGIS interface
         self.iface = iface
-        
-        #Récupération du graphique
         self.canvas = self.iface.mapCanvas()
         
         # initialize plugin directory
@@ -65,8 +63,8 @@ class AutoPolygon:
         locale_path = os.path.join(
             self.plugin_dir,
             'i18n',
-            'AutoPolygon_{}.qm'.format(locale))
-
+            'Auto_Polygon_{}.qm'.format(locale))
+            
         if os.path.exists(locale_path):
             self.translator = QTranslator()
             self.translator.load(locale_path)
@@ -76,7 +74,6 @@ class AutoPolygon:
 
         #Configuration 
         self.config = ConfigParser.RawConfigParser()
-        #self.config.add_section('RECTANGLE')
                 
         # Create the dialog (after translation) and keep reference
         self.dlg = AutoPolygonDialog()
@@ -85,7 +82,7 @@ class AutoPolygon:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr(u'&Automatic Polygon')
+        self.menu = self.tr(u'Automatic Polygon')
         # TODO: We are going to let the user set this up in a future iteration
         self.toolbar = self.iface.addToolBar(u'AutoPolygon')
         self.toolbar.setObjectName(u'AutoPolygon')
@@ -103,7 +100,7 @@ class AutoPolygon:
         :rtype: QString
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
-        return QCoreApplication.translate('AutoPolygon', message)
+        return QCoreApplication.translate('Auto_Polygon', message)
 
 
     def add_action(
@@ -184,34 +181,33 @@ class AutoPolygon:
 
         # Add actions
         
-        # Création automatique d'un Polygone via un point
+        #Automatic creation of a polygon with a point
         icon_path = ':/plugins/AutoPolygon/icons/rectangle_point.png'
         self.rectdigitpoint = self.add_action(
             icon_path,
-            text=self.tr(u'Création automatique d\'un Polygone via un point'),
+            text=self.tr(u'Automatic creation of a polygon with a point'),
             callback=self.rectcreate_point,
-             add_to_menu=False,
+             add_to_menu=True,
              add_to_toolbar=False,
             parent=self.iface.mainWindow())
             
-        # Création automatique de Polygone via une ligne
+        #Automatic creation of a polygon with a line
         icon_path = ':/plugins/AutoPolygon/icons/rectangle_line.png'
         self.rectdigitline = self.add_action(
             icon_path,
-            text=self.tr(u'Création automatique de Polygones via une ligne'),
+            text=self.tr(u'Automatic creation of a polygon with a line'),
             callback=self.rectcreate_line,
-             add_to_menu=False,
+             add_to_menu=True,
              add_to_toolbar=False,
             parent=self.iface.mainWindow())
-        
-        
-        # Récupération de l'outil pour digitaliser un rectangle
+                
+        # Get the tool to digitize a rectangle
         self.rectdigittool = RectDigitTool( self.canvas )
                 
-        #Configuration de l'outil de rectangle
+        #Configuring the rectangle tool
         self.RectMaj()
         
-        #Outils de création de polygone
+        #Polygon creation tools
         self.rectdigittools = QToolButton(self.toolbar)
         self.rectdigittools.setPopupMode(QToolButton.MenuButtonPopup)
         
@@ -219,7 +215,7 @@ class AutoPolygon:
         self.rectdigittools.setDefaultAction(self.rectdigitpoint)        
         self.toolbar.addWidget(self.rectdigittools)  
 
-        # Création du bouton d'option
+        #Creating the option button
         icon_path = ':/plugins/AutoPolygon/icons/option.png'
         self.options_conf = self.add_action(
             icon_path,
@@ -229,16 +225,17 @@ class AutoPolygon:
              add_to_toolbar=True,
             parent=self.iface.mainWindow())        
                            
-        #On se "connecte" à l'événement changement de couche
+        #Connect to the event change layer
         QObject.connect(self.iface, SIGNAL("currentLayerChanged(QgsMapLayer*)"), self.toggle)
         
-        # A la fin de la saisie, on appel la fonction createFeature
+        # At the end of the feature creation, call the function createFeature
         QObject.connect(self.rectdigittool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)
         
-        # Par défaut, on met le bouton enabled à False
+        # By default, put the enabled button to False
         self.rectdigitpoint.setEnabled(False)
+        self.rectdigitline.setEnabled(False)
         
-        #Si une couche est déjà sélectionné, on demande à exécuter toggle  si l'utilisateur demande l'édition    
+        #If a layer is already selected, you are asked to perform toggle if the user requests editing
         self.toggle()
 
     def unload(self):
@@ -249,7 +246,7 @@ class AutoPolygon:
                 action)
             self.iface.removeToolBarIcon(action)
         
-        #Déconnexion des événements
+        #Disconnecting events
         QObject.disconnect(self.rectdigittool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)
         QObject.disconnect(self.iface, SIGNAL("currentLayerChanged(QgsMapLayer*)"), self.toggle)
     
@@ -266,7 +263,7 @@ class AutoPolygon:
             # substitute with your code.
             pass
          
-    #Fonction au basculement/Changement d'une couche
+    #Function changing a layer
     def toggle(self):
         mc = self.canvas
         layer = mc.currentLayer()
@@ -274,35 +271,35 @@ class AutoPolygon:
         if layer <> None:
             
             if layer.type() == QgsMapLayer.VectorLayer:
-                #Si la couche est éditable et que c'est la géométrie est de type polygone
+                #If the layer is editable and the geometry is a type polygon
                 if (layer.isEditable() and layer.geometryType() == 2):
                                                                        
-                    #On rend le bouton clickable
+                    #It makes clickable button
                     self.rectdigitpoint.setEnabled(True)
                     self.rectdigitline.setEnabled(True)
 
-                    #On se "connecte" à l'évenèment de fin d'édition
+                    #Connect to the event editing stopped
                     QObject.connect(layer,SIGNAL("editingStopped()"),self.toggle)
 
-                    #On se "déconnecte" à l'évenèment de début d'édition
+                    #Disconnect to the event editing started
                     QObject.disconnect(layer,SIGNAL("editingStarted()"),self.toggle) 
                 
-                else:
-                    #On rend le bouton inclickable
+                else:                                
+                    #It makes unclickable button
                     self.rectdigitpoint.setEnabled(False)
                     self.rectdigitline.setEnabled(False)
                     
                     if layer.geometryType() == 2:
-                        #On se "connecte" à l'évenèment de début d'édition
+                        #Connect to the event editing started
                         QObject.connect(layer,SIGNAL("editingStarted()"),self.toggle)
                     else:
-                        #On se "déconnecte" à l'évenèment de début d'édition
+                        #Disconnect to the event editing started
                         QObject.disconnect(layer,SIGNAL("editingStarted()"),self.toggle) 
                     
-                    #On se "déconnecte" à l'évenèment de fin d'édition
+                    #Disconnect to the event editing stopped
                     QObject.disconnect(layer,SIGNAL("editingStopped()"),self.toggle)
             else:
-                #On se "déconnecte" à l'évenèment de début d'édition
+                #Disconnect to the event editing started
                 QObject.disconnect(layer,SIGNAL("editingStarted()"),self.toggle) 
                 
                 
@@ -319,13 +316,6 @@ class AutoPolygon:
                         level=QgsMessageBar.WARNING,
                         duration=3
                     )
-        
-        #self.rectdigitpoint.setChecked(True)       
-        
-        #On déconnecte l'appel de la fonction  (au cas ou elle existerait déjà)
-        #QObject.disconnect(self.rectdigittool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)
-        # A la fin de la saisie, on appel la fonction createFeature
-        #QObject.connect(self.rectdigittool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)
                 
     def rectcreate_line(self):
         self.canvas.setMapTool(self.rectdigittool)
@@ -340,23 +330,18 @@ class AutoPolygon:
                         level=QgsMessageBar.WARNING,
                         duration=3
                     )        
-        #On déconnecte l'appel de la fonction  (au cas ou elle existerait déjà)
-        #QObject.disconnect(self.rectdigittool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)
-        # A la fin de la saisie, on appel la fonction createFeature
-        #QObject.connect(self.rectdigittool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)
-        
 
-    #Création de l'objet
+    #Function when create feature
     def createFeature(self, geom):
         settings = QSettings()
         mc = self.canvas
         
-        #Récupération de la couche
+        #Get the current layer
         layer = mc.currentLayer()
         if layer <> None:
             renderer = mc.mapRenderer()
             
-            #Récupération du srid de la couche
+            #Get the layer SRID
             layerCRSSrsid = layer.crs().srsid()
             projectCRSSrsid = renderer.destinationCrs().srsid()
             
@@ -373,20 +358,20 @@ class AutoPolygon:
             fields = layer.pendingFields()
 
             # vector api change update
-
             f.initAttributes(fields.count())
             for i in range(fields.count()):
                 f.setAttribute(i,provider.defaultValue(i))
 
-            layer.beginEditCommand("Création d'objet")       
+            layer.beginEditCommand("Create a feature")       
             layer.addFeature(f)
             layer.endEditCommand()
             
         else:
             QObject.disconnect(self.rectdigittool, SIGNAL("rbFinished(PyQt_PyObject)"), self.createFeature)
-            
+         
+    # Showing the option dialog box         
     def options(self):
-        #Affichage de la fenêtre des options
+    
         """Run method that performs all the real work"""
         # show the dialog
         self.dlg_options.show()
@@ -397,13 +382,13 @@ class AutoPolygon:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
             
-            #Configuration de l'outil de rectangle
+            #Configuring the rectangle tool
             self.RectMaj()
             
             pass
      
     def RectMaj(self):
-        #Configuration de l'outil de rectangle
+        #Configuring the rectangle tool
         try: self.config.read( self.plugin_dir+'/AutoPolygon.cfg' )
         except: return
         try: 
@@ -411,16 +396,16 @@ class AutoPolygon:
             height=self.config.getfloat('RECTANGLE','height')
             position=self.config.get('RECTANGLE','position')
         except: 
-            #S'il n'y eu des erreurs, on met les valeurs par défaut
+            #If there were errors, the default values are put
             width=2
             height=1
-            position="Bottom Left"
+            position= self.tr(u'Bottom Left').encode('utf-8').strip()
             
         self.rectdigittool.SetWidth (width)
         self.rectdigittool.SetHeight (height)
         result = self.rectdigittool.SetPositionPoint(position)
         
-        #Si la position n'existe pas
+        #If the position doesn't existSi la position n'existe pas
         if result is not None :
             self.iface.messageBar().pushMessage(
                         self.tr(u'Warning'),

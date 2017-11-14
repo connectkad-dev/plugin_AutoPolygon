@@ -9,8 +9,9 @@
 [general]
 name=Automatic Polygon
 qgisMinimumVersion=2.14
-description=Ce plugin permet de créer des polygones automatiques selon une longueur et largeur prédéfinies
-version=0.1
+description=This plugin allows to create automatic polygons according to a predefined height and width.
+about=Digitizing Rectangles.
+version=1.0
 author=G. Lavocat/Rennes Métropole
 email=g.lavocat@rennesmetropole.fr
 
@@ -22,7 +23,7 @@ email=g.lavocat@rennesmetropole.fr
 # changelog=
 
 # Tags are comma separated with spaces allowed
-tags=Rennes Métropole, Polygone, Polygon, Automatic, Automatique
+tags=Rennes Métropole, polygon, automatic, rectangle, digitizing
 
 homepage=http://github.com/sigrennesmetropole
 tracker=http://github.com/sigrennesmetropole
